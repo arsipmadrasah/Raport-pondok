@@ -348,10 +348,6 @@ export function UjianLisanGuruView({
     setUnsavedSantriIds((prev) => new Set(prev).add(santriId));
   };
 
-  // Quick preset button click (0, 1, 2, 2.5, 3, 3.5, 4)
-  const setQuickScore = (santriId: string, qIdx: number, val: number) => {
-    handleScoreChange(santriId, qIdx, val);
-  };
 
   // Simpan nilai ujian & remedial ke database Supabase
   const handleSaveAllChanges = async () => {
@@ -748,16 +744,16 @@ export function UjianLisanGuruView({
                   }`}
                 >
                   {/* Baris Atas: Nomor, Nama Santri, & Status Kelulusan */}
-                  <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-900 text-xs font-black flex items-center justify-center shrink-0">
+                  <div className="flex items-start justify-between gap-2.5 border-b border-slate-100 pb-2.5">
+                    <div className="flex items-start gap-2.5 min-w-0">
+                      <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-900 text-xs font-black flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
                         {idx + 1}
                       </span>
                       <div className="min-w-0">
-                        <h4 className="text-xs font-black text-slate-900 leading-tight uppercase truncate">
+                        <h4 className="text-xs sm:text-sm font-black text-slate-900 leading-snug uppercase">
                           {santri.namaLengkap}
                         </h4>
-                        <span className="text-[10px] text-slate-400 font-medium">
+                        <span className="text-[10px] text-slate-400 font-semibold tracking-wide">
                           NIS: {santri.nis}
                         </span>
                       </div>
@@ -789,20 +785,20 @@ export function UjianLisanGuruView({
                           )}
                         </div>
                       ) : (
-                        <span className="text-[10px] text-slate-400 font-medium bg-slate-100 px-2 py-0.5 rounded-md">
+                        <span className="text-[10px] text-slate-500 font-bold bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md">
                           Belum Dinilai
                         </span>
                       )}
                     </div>
                   </div>
 
-                  {/* 5 Kolom Soal / Pertanyaan Berjejer Pas 1 Layar HP */}
-                  <div className="mt-2.5 grid grid-cols-5 gap-1.5">
+                  {/* 5 Kotak Input Nilai Soal (P1 - P5) Bersih, Luas & Ramah Sentuhan */}
+                  <div className="mt-3 grid grid-cols-5 gap-2">
                     {[0, 1, 2, 3, 4].map((qIdx) => {
                       const val = scores[qIdx];
                       return (
                         <div key={qIdx} className="flex flex-col items-center">
-                          <span className="text-[10px] font-black text-slate-500 mb-1">
+                          <span className="text-[11px] font-extrabold text-slate-500 mb-1">
                             P{qIdx + 1}
                           </span>
                           <input
@@ -825,31 +821,14 @@ export function UjianLisanGuruView({
                                 }
                               }
                             }}
-                            className={`w-full text-center py-2 rounded-xl border text-sm font-black transition focus:outline-none focus:ring-2 focus:ring-emerald-600 ${
+                            className={`w-full text-center py-2.5 rounded-xl border-2 text-base font-black transition shadow-2xs focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-600 focus:bg-white ${
                               val === ''
-                                ? 'border-slate-300 bg-white text-slate-400'
+                                ? 'border-slate-200 bg-slate-50 text-slate-700 placeholder:text-slate-300'
                                 : Number(val) >= 2.7
-                                ? 'border-emerald-400 bg-emerald-50 text-emerald-950 font-bold'
-                                : 'border-rose-300 bg-rose-50 text-rose-900 font-bold'
+                                ? 'border-emerald-500 bg-emerald-50/80 text-emerald-950 font-black'
+                                : 'border-rose-400 bg-rose-50/80 text-rose-900 font-black'
                             }`}
                           />
-                          {/* Tombol Nilai Cepat 4, 3, 2 Ukuran Ramah Jempol */}
-                          <div className="flex items-center justify-center gap-0.5 mt-1 w-full">
-                            {[4, 3, 2].map((num) => (
-                              <button
-                                key={num}
-                                type="button"
-                                onClick={() => setQuickScore(santri.id, qIdx, num)}
-                                className={`flex-1 py-1 rounded text-[10px] font-black transition cursor-pointer ${
-                                  Number(val) === num
-                                    ? 'bg-emerald-700 text-white shadow-2xs'
-                                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700 active:scale-95'
-                                }`}
-                              >
-                                {num}
-                              </button>
-                            ))}
-                          </div>
                         </div>
                       );
                     })}
@@ -985,41 +964,14 @@ export function UjianLisanGuruView({
                                       }
                                     }
                                   }}
-                                  className={`w-12 text-center py-1.5 rounded-lg border font-black text-xs transition focus:outline-none focus:ring-2 focus:ring-emerald-600 ${
+                                  className={`w-14 text-center py-1.5 rounded-lg border-2 font-black text-sm transition focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white shadow-2xs ${
                                     val === ''
-                                      ? 'border-slate-300 bg-white text-slate-400'
+                                      ? 'border-slate-300 bg-slate-50/70 text-slate-700 placeholder:text-slate-300'
                                       : Number(val) >= 2.7
-                                      ? 'border-emerald-400 bg-emerald-50 text-emerald-950'
-                                      : 'border-rose-300 bg-rose-50 text-rose-900'
+                                      ? 'border-emerald-500 bg-emerald-50/70 text-emerald-950'
+                                      : 'border-rose-400 bg-rose-50/70 text-rose-900'
                                   }`}
                                 />
-                                {/* Tombol Cepat Nilai */}
-                                <div className="flex items-center gap-0.5 text-[9px] font-bold text-slate-400 opacity-60 hover:opacity-100">
-                                  <button
-                                    type="button"
-                                    onClick={() => setQuickScore(santri.id, qIdx, 4)}
-                                    className="px-1 hover:text-emerald-700 hover:bg-slate-200 rounded"
-                                    title="Nilai 4 (Sempurna)"
-                                  >
-                                    4
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => setQuickScore(santri.id, qIdx, 3)}
-                                    className="px-1 hover:text-emerald-700 hover:bg-slate-200 rounded"
-                                    title="Nilai 3 (75%)"
-                                  >
-                                    3
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => setQuickScore(santri.id, qIdx, 2)}
-                                    className="px-1 hover:text-emerald-700 hover:bg-slate-200 rounded"
-                                    title="Nilai 2 (50%)"
-                                  >
-                                    2
-                                  </button>
-                                </div>
                               </div>
                             </td>
                           );
@@ -1100,10 +1052,10 @@ export function UjianLisanGuruView({
               type="button"
               onClick={handleSaveAllChanges}
               disabled={isSaving}
-              className="w-full py-3.5 px-4 rounded-2xl bg-amber-500 hover:bg-amber-400 active:scale-98 text-slate-950 font-black text-xs sm:text-sm shadow-xl flex items-center justify-center gap-2 border-2 border-amber-300 ring-4 ring-black/10 cursor-pointer"
+              className="w-full py-3.5 px-4 rounded-2xl bg-amber-500 hover:bg-amber-400 active:scale-98 text-slate-950 font-black text-xs sm:text-sm shadow-xl flex items-center justify-center gap-2 border-2 border-amber-300 ring-4 ring-black/10 cursor-pointer disabled:opacity-50"
             >
               <Save className="w-4 h-4" />
-              <span>Simpan {unsavedSantriIds.size} Nilai Baru ke Database</span>
+              <span>{isSaving ? 'Menyimpan ke Database...' : `Simpan ${unsavedSantriIds.size} Nilai Baru ke Database`}</span>
             </button>
           </div>
         )}
