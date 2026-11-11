@@ -913,6 +913,16 @@ export default function App() {
           try {
             localStorage.setItem('rapor_guru_list', JSON.stringify(loadedGuru));
           } catch (_) {}
+        } else if (guruRows && guruRows.length === 0 && guruList.length > 0) {
+          // Tabel guru baru dibuat dan masih kosong: otomatis simpan data guru saat ini ke Supabase
+          const payload = guruList.map((g) => ({
+            id: g.id,
+            nama: g.nama,
+            mapel_ids: g.mapelIds || [],
+            kelas_ids: g.kelasIds || [],
+            status_aktif: g.statusAktif ?? true
+          }));
+          await SupabaseDB.upsert('guru', payload);
         }
       } catch (errGuru) {
         console.warn('Tabel guru di Supabase belum ada atau gagal dibaca:', errGuru);

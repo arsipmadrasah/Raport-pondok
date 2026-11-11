@@ -213,7 +213,7 @@ export function GuruMasterView({
       showToast(`Data guru ${guru.nama} berhasil dihapus permanen dari Supabase!`, 'success');
     } catch (err: any) {
       console.warn('Gagal menghapus dari Supabase:', err);
-      showToast(`Data ${guru.nama} dihapus dari sesi lokal.`, 'warning');
+      showToast(`Data ${guru.nama} dihapus dari sesi lokal (Catatan: Tabel 'guru' belum dibuat di Supabase).`, 'warning');
     }
 
     if (addLog) addLog('HAPUS_GURU', `Menghapus data guru ${guru.nama}`);
