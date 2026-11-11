@@ -556,82 +556,126 @@ export function UjianLisanGuruView({
   }
 
   // =========================================================================
-  // 2. SETELAH LOGIN: SATU TAMPILAN RESMI (TABEL KERTAS LEMBAR UJIAN & REMEDIAL)
-  //    (Mode kartu HP telah dihapus sesuai instruksi user)
+  // 2. SETELAH LOGIN: RESPONSIF CERDAS (OTOMATIS DETEKSI LAPTOP VS SMARTPHONE)
+  //    - Di Laptop / Layar Lebar: Tabel Kertas Resmi Pesantren Utuh
+  //    - Di HP / Smartphone: Mode Kartu Ramah Jempol (Tanpa Geser Kanan-Kiri)
   // =========================================================================
+  const namaKelasFormatted = selectedKelasObj?.namaKelas
+    ? selectedKelasObj.namaKelas.toLowerCase().startsWith('kelas')
+      ? selectedKelasObj.namaKelas
+      : `Kelas ${selectedKelasObj.namaKelas}`
+    : '';
+
   return (
     <div className="min-h-screen bg-slate-100 text-slate-800 flex flex-col font-sans">
-      {/* HEADER UTAMA GURU PENILAI (BERSIH DARI DROPDOWN, SESI TERKUNCI DARI LOGIN) */}
-      <header className="bg-gradient-to-r from-[#043324] via-[#064E3B] to-[#043324] text-white px-3 sm:px-6 py-3 shadow-md flex items-center justify-between gap-3 sticky top-0 z-40 border-b border-emerald-600/40">
-        <div className="min-w-0 space-y-0.5">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h1 className="text-sm sm:text-base font-black leading-tight tracking-wide">
-              Lembar Ujian Santri
+      {/* HEADER UTAMA GURU PENILAI (RESPONSIF LAPTOP & HP) */}
+      <header className="bg-gradient-to-r from-[#043324] via-[#064E3B] to-[#043324] text-white px-3 sm:px-6 py-2.5 sm:py-3 shadow-md sticky top-0 z-40 border-b border-emerald-600/40">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          {/* Baris 1: Judul Ringkas & Tombol Aksi di Mobile */}
+          <div className="flex items-center justify-between sm:justify-start gap-2">
+            <h1 className="text-sm sm:text-base font-black leading-tight tracking-wide text-emerald-50">
+              Lembar Ujian Syafahi
             </h1>
-            <span className="px-2.5 py-0.5 rounded-lg bg-emerald-900/90 text-amber-300 text-xs font-bold border border-emerald-600/60 shadow-2xs">
-              Kelas {selectedKelasObj?.namaKelas || ''}
+
+            {/* Tombol Aksi Khusus Mobile (Header Baris 1) */}
+            <div className="flex items-center gap-1.5 sm:hidden">
+              <button
+                type="button"
+                onClick={handleSaveAllChanges}
+                disabled={isSaving}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-black transition cursor-pointer shadow-xs ${
+                  unsavedSantriIds.size > 0
+                    ? 'bg-amber-400 text-slate-950 ring-2 ring-amber-300 animate-pulse'
+                    : 'bg-emerald-600 text-white border border-emerald-400/50'
+                }`}
+                title="Simpan nilai ke database"
+              >
+                <Save className="w-3.5 h-3.5" />
+                <span>{isSaving ? '...' : unsavedSantriIds.size > 0 ? `Simpan (${unsavedSantriIds.size})` : 'Simpan'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleBackToSelection}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-emerald-900/90 border border-emerald-600/60 text-emerald-100 text-xs font-semibold"
+                title="Ganti Kelas / Kitab"
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span>Ganti</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="p-1.5 rounded-xl bg-emerald-950/90 border border-emerald-700/60 text-emerald-200 hover:text-white"
+                title="Keluar"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Baris 2: Pita Info Sesi (Kelas, Mapel, Penguji) */}
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 text-xs">
+            <span className="px-2.5 py-0.5 rounded-lg bg-emerald-900/90 text-amber-300 text-[11px] sm:text-xs font-bold border border-emerald-600/60 shrink-0 shadow-2xs">
+              {namaKelasFormatted}
             </span>
-            <span className="px-2.5 py-0.5 rounded-lg bg-emerald-900/90 text-white text-xs font-semibold border border-emerald-600/60 shadow-2xs">
+            <span className="px-2.5 py-0.5 rounded-lg bg-emerald-900/90 text-white text-[11px] sm:text-xs font-semibold border border-emerald-600/60 shrink-0 truncate max-w-[180px] sm:max-w-none shadow-2xs">
               {selectedMapelObj?.namaLatin || ''} {selectedMapelObj?.namaArab ? `(${selectedMapelObj.namaArab})` : ''}
             </span>
-          </div>
-          <p className="text-[11px] sm:text-xs text-emerald-200 flex items-center gap-1.5">
-            <span>Penguji:</span>
-            <strong className="text-white font-bold">{currentUstadz}</strong>
-          </p>
-        </div>
-
-        {/* KONTROL KANAN: TOMBOL SIMPAN & GANTI KELAS/GURU */}
-        <div className="flex items-center gap-2 shrink-0">
-          {/* Tombol Simpan Nilai ke Database */}
-          <button
-            type="button"
-            onClick={handleSaveAllChanges}
-            disabled={isSaving}
-            className={`flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer shadow-sm ${
-              unsavedSantriIds.size > 0
-                ? 'bg-amber-400 hover:bg-amber-300 text-slate-950 ring-2 ring-amber-300 animate-pulse'
-                : 'bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-400/50'
-            }`}
-            title="Simpan nilai ke database"
-          >
-            <Save className="w-4 h-4" />
-            <span>
-              {isSaving
-                ? 'Menyimpan...'
-                : unsavedSantriIds.size > 0
-                ? `Simpan (${unsavedSantriIds.size})`
-                : 'Simpan'}
+            <span className="px-2.5 py-0.5 rounded-lg bg-emerald-950/90 text-emerald-200 text-[11px] sm:text-xs font-medium border border-emerald-700/60 shrink-0 truncate max-w-[170px] sm:max-w-none shadow-2xs">
+              Penguji: <strong className="text-white font-bold">{currentUstadz}</strong>
             </span>
-          </button>
+          </div>
 
-          {/* Tombol Ganti Sesi / Kelas */}
-          <button
-            type="button"
-            onClick={handleBackToSelection}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-900/80 hover:bg-emerald-800 border border-emerald-600/60 text-emerald-100 hover:text-white text-xs font-semibold transition cursor-pointer"
-            title="Ganti kelas atau mata pelajaran yang dinilai"
-          >
-            <Layers className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Ganti Kelas / Sesi</span>
-            <span className="sm:hidden">Ganti</span>
-          </button>
+          {/* Tombol Aksi di Layar Komputer / Laptop (Hidden on Mobile) */}
+          <div className="hidden sm:flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={handleSaveAllChanges}
+              disabled={isSaving}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer shadow-sm ${
+                unsavedSantriIds.size > 0
+                  ? 'bg-amber-400 hover:bg-amber-300 text-slate-950 ring-2 ring-amber-300 animate-pulse'
+                  : 'bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-400/50'
+              }`}
+              title="Simpan nilai ke database"
+            >
+              <Save className="w-4 h-4" />
+              <span>
+                {isSaving
+                  ? 'Menyimpan...'
+                  : unsavedSantriIds.size > 0
+                  ? `Simpan (${unsavedSantriIds.size})`
+                  : 'Simpan'}
+              </span>
+            </button>
 
-          {/* Tombol Logout / Ganti Guru */}
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-700/60 text-emerald-200 hover:text-white text-xs font-semibold transition cursor-pointer"
-            title="Keluar dan ganti nama guru penguji"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Keluar</span>
-          </button>
+            <button
+              type="button"
+              onClick={handleBackToSelection}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-900/80 hover:bg-emerald-800 border border-emerald-600/60 text-emerald-100 hover:text-white text-xs font-semibold transition cursor-pointer"
+              title="Ganti kelas atau mata pelajaran yang dinilai"
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>Ganti Kelas / Sesi</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-700/60 text-emerald-200 hover:text-white text-xs font-semibold transition cursor-pointer"
+              title="Keluar dan ganti nama guru penguji"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Keluar</span>
+            </button>
+          </div>
         </div>
       </header>
 
-      {/* KONTEN UTAMA: TABEL KERTAS PERSIS FOTO DOKUMEN FISIK PESANTREN */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 space-y-4">
+      {/* KONTEN UTAMA */}
+      <main className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 space-y-3.5">
         {/* BILAH PENCARIAN & STATUS PENYIMPANAN */}
         <div className="bg-white rounded-2xl border border-slate-200 p-3 sm:p-4 flex flex-wrap items-center justify-between gap-3 shadow-2xs">
           <div className="flex items-center gap-2 w-full sm:w-auto flex-1 max-w-md">
@@ -642,7 +686,7 @@ export function UjianLisanGuruView({
                 placeholder="Cari nama santri atau NIS..."
                 value={searchKeyword}
                 onChange={(e) => setSearchKeyword(e.target.value)}
-                className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-600 focus:outline-none"
+                className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm focus:ring-2 focus:ring-emerald-600 focus:outline-none"
               />
               {searchKeyword && (
                 <button
@@ -670,9 +714,157 @@ export function UjianLisanGuruView({
         </div>
 
         {/* ============================================================== */}
-        {/* UTAMA: TABEL KERTAS LEMBAR NILAI (PERSIS FOTO ASLI PESANTREN)  */}
+        {/* 1. TAMPILAN KHUSUS SMARTPHONE / HP (OTOMATIS DI LAYAR HP)     */}
+        {/*    Mode Kartu Ramah Jempol: Tanpa Geser Kanan-Kiri             */}
         {/* ============================================================== */}
-        <div className="bg-white rounded-2xl border-2 border-slate-300 shadow-sm overflow-hidden space-y-0">
+        <div className="block md:hidden space-y-3 pb-24">
+          <div className="bg-sky-50/70 border border-sky-200 p-2.5 rounded-xl text-[11px] text-slate-600 flex items-center justify-between">
+            <span>Standar Lulus: <strong>Minimal 2,7</strong> (Skala 0 s/d 4)</span>
+            <span className="font-bold text-slate-800">{filteredSantri.length} Santri</span>
+          </div>
+
+          {filteredSantri.length === 0 ? (
+            <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center text-slate-400 font-semibold text-xs">
+              Tidak ada santri yang sesuai kriteria filter / pencarian.
+            </div>
+          ) : (
+            filteredSantri.map((santri, idx) => {
+              const scores = examItems[santri.id] || ['', '', '', '', ''];
+              const calc = calculateScore(scores);
+              const isUnsaved = unsavedSantriIds.has(santri.id);
+              const isRemedial = calc.count > 0 && !calc.isLulus;
+
+              return (
+                <div
+                  key={santri.id}
+                  className={`p-3.5 rounded-2xl border transition shadow-xs ${
+                    isUnsaved
+                      ? 'border-amber-400 bg-amber-50/50 ring-1 ring-amber-300'
+                      : isRemedial
+                      ? 'border-rose-200 bg-rose-50/30'
+                      : calc.isLulus
+                      ? 'border-emerald-200 bg-emerald-50/20'
+                      : 'border-slate-200 bg-white'
+                  }`}
+                >
+                  {/* Baris Atas: Nomor, Nama Santri, & Status Kelulusan */}
+                  <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-900 text-xs font-black flex items-center justify-center shrink-0">
+                        {idx + 1}
+                      </span>
+                      <div className="min-w-0">
+                        <h4 className="text-xs font-black text-slate-900 leading-tight uppercase truncate">
+                          {santri.namaLengkap}
+                        </h4>
+                        <span className="text-[10px] text-slate-400 font-medium">
+                          NIS: {santri.nis}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Badge Rata-Rata & Status */}
+                    <div className="text-right shrink-0">
+                      {calc.avg !== null ? (
+                        <div className="flex items-center gap-1.5">
+                          <div className="text-right">
+                            <span className="text-[10px] text-slate-500 font-bold">Rata: </span>
+                            <span
+                              className={`text-xs font-black ${
+                                calc.isLulus ? 'text-emerald-700' : 'text-rose-600'
+                              }`}
+                            >
+                              {calc.avg.toFixed(2)}
+                            </span>
+                          </div>
+                          {calc.isLulus ? (
+                            <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-900 text-[10px] font-black border border-emerald-300 flex items-center gap-0.5">
+                              <Check className="w-3 h-3 text-emerald-700" />
+                              <span>LULUS</span>
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-md bg-rose-100 text-rose-900 text-[10px] font-black border border-rose-300">
+                              REMEDIAL
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-[10px] text-slate-400 font-medium bg-slate-100 px-2 py-0.5 rounded-md">
+                          Belum Dinilai
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* 5 Kolom Soal / Pertanyaan Berjejer Pas 1 Layar HP */}
+                  <div className="mt-2.5 grid grid-cols-5 gap-1.5">
+                    {[0, 1, 2, 3, 4].map((qIdx) => {
+                      const val = scores[qIdx];
+                      return (
+                        <div key={qIdx} className="flex flex-col items-center">
+                          <span className="text-[10px] font-black text-slate-500 mb-1">
+                            P{qIdx + 1}
+                          </span>
+                          <input
+                            type="number"
+                            min="0"
+                            max="4"
+                            step="0.1"
+                            inputMode="decimal"
+                            placeholder="—"
+                            value={val}
+                            onChange={(e) => {
+                              const rawVal = e.target.value;
+                              if (rawVal === '') {
+                                handleScoreChange(santri.id, qIdx, '');
+                              } else {
+                                const num = parseFloat(rawVal);
+                                if (!isNaN(num)) {
+                                  const clamped = Math.min(4, Math.max(0, num));
+                                  handleScoreChange(santri.id, qIdx, clamped);
+                                }
+                              }
+                            }}
+                            className={`w-full text-center py-2 rounded-xl border text-sm font-black transition focus:outline-none focus:ring-2 focus:ring-emerald-600 ${
+                              val === ''
+                                ? 'border-slate-300 bg-white text-slate-400'
+                                : Number(val) >= 2.7
+                                ? 'border-emerald-400 bg-emerald-50 text-emerald-950 font-bold'
+                                : 'border-rose-300 bg-rose-50 text-rose-900 font-bold'
+                            }`}
+                          />
+                          {/* Tombol Nilai Cepat 4, 3, 2 Ukuran Ramah Jempol */}
+                          <div className="flex items-center justify-center gap-0.5 mt-1 w-full">
+                            {[4, 3, 2].map((num) => (
+                              <button
+                                key={num}
+                                type="button"
+                                onClick={() => setQuickScore(santri.id, qIdx, num)}
+                                className={`flex-1 py-1 rounded text-[10px] font-black transition cursor-pointer ${
+                                  Number(val) === num
+                                    ? 'bg-emerald-700 text-white shadow-2xs'
+                                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700 active:scale-95'
+                                }`}
+                              >
+                                {num}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* ============================================================== */}
+        {/* 2. TAMPILAN KHUSUS LAPTOP / KOMPUTER (OTOMATIS DI LAYAR BESAR) */}
+        {/*    Format Tabel Kertas Fisik Asli Pesantren                    */}
+        {/* ============================================================== */}
+        <div className="hidden md:block bg-white rounded-2xl border-2 border-slate-300 shadow-sm overflow-hidden space-y-0">
           {/* Header Lembar Ujian Gaya Kertas Cetak */}
           <div className="p-3.5 sm:p-4 border-b border-slate-300 bg-sky-50/50 flex flex-wrap items-center justify-between gap-2">
             <div>
@@ -680,7 +872,7 @@ export function UjianLisanGuruView({
                 LEMBAR PENILAIAN UJIAN SYAFAHI
               </h3>
               <p className="text-[11px] text-slate-600 font-medium">
-                Mata Pelajaran: <strong>{selectedMapelObj?.namaLatin} ({selectedMapelObj?.namaArab})</strong> • Kelas: <strong>{selectedKelasObj?.namaKelas}</strong> • Penguji: <strong>{currentUstadz}</strong>
+                Mata Pelajaran: <strong>{selectedMapelObj?.namaLatin} ({selectedMapelObj?.namaArab})</strong> • Kelas: <strong>{namaKelasFormatted}</strong> • Penguji: <strong>{currentUstadz}</strong>
               </p>
             </div>
             <div className="text-[11px] text-slate-500 italic">
@@ -736,25 +928,20 @@ export function UjianLisanGuruView({
                     const calc = calculateScore(scores);
                     const isUnsaved = unsavedSantriIds.has(santri.id);
                     const isRemedial = calc.count > 0 && !calc.isLulus;
+                    const rowSolidBg = isUnsaved ? 'bg-amber-50' : isRemedial ? 'bg-rose-50' : 'bg-white';
 
                     return (
                       <tr
                         key={santri.id}
-                        className={`transition hover:bg-sky-50/40 ${
-                          isUnsaved
-                            ? 'bg-amber-50/50'
-                            : isRemedial
-                            ? 'bg-rose-50/30'
-                            : ''
-                        }`}
+                        className={`transition hover:bg-sky-50/40 ${rowSolidBg}`}
                       >
-                        {/* No Urut (Sticky Left) */}
-                        <td className="py-2 px-2 text-center font-bold border-r border-slate-200 text-slate-600 sticky left-0 bg-inherit z-10">
+                        {/* No Urut (Sticky Left dengan background solid bebas ghosting) */}
+                        <td className={`py-2 px-2 text-center font-bold border-r border-slate-200 text-slate-600 sticky left-0 z-10 ${rowSolidBg}`}>
                           {idx + 1}
                         </td>
 
-                        {/* Nama Santri & NIS (Sticky Left) */}
-                        <td className="py-2 px-3 font-bold text-slate-900 border-r border-slate-200 sticky left-12 bg-inherit z-10 shadow-xs">
+                        {/* Nama Santri & NIS (Sticky Left dengan background solid bebas ghosting) */}
+                        <td className={`py-2 px-3 font-bold text-slate-900 border-r border-slate-200 sticky left-12 z-10 shadow-xs ${rowSolidBg}`}>
                           <div className="uppercase leading-tight flex items-center justify-between gap-1">
                             <span>{santri.namaLengkap}</span>
                             {isUnsaved && (
@@ -793,7 +980,6 @@ export function UjianLisanGuruView({
                                     } else {
                                       const num = parseFloat(rawVal);
                                       if (!isNaN(num)) {
-                                        // Batasi antara 0 dan 4
                                         const clamped = Math.min(4, Math.max(0, num));
                                         handleScoreChange(santri.id, qIdx, clamped);
                                       }
@@ -807,7 +993,7 @@ export function UjianLisanGuruView({
                                       : 'border-rose-300 bg-rose-50 text-rose-900'
                                   }`}
                                 />
-                                {/* Tombol Cepat Nilai Populer (Jika kosong atau ingin cepat ganti saat remedial) */}
+                                {/* Tombol Cepat Nilai */}
                                 <div className="flex items-center gap-0.5 text-[9px] font-bold text-slate-400 opacity-60 hover:opacity-100">
                                   <button
                                     type="button"
@@ -884,7 +1070,7 @@ export function UjianLisanGuruView({
           {/* Footer Tabel dengan Tombol Simpan Cepat Bawah */}
           <div className="p-3.5 bg-slate-50 border-t border-slate-300 flex flex-wrap items-center justify-between gap-3">
             <div className="text-xs text-slate-600 font-semibold">
-              Menampilkan <strong>{filteredSantri.length}</strong> dari <strong>{santriInKelas.length}</strong> santri kelas {selectedKelasObj?.namaKelas}
+              Menampilkan <strong>{filteredSantri.length}</strong> dari <strong>{santriInKelas.length}</strong> santri {namaKelasFormatted}
             </div>
 
             <div className="flex items-center gap-2">
@@ -906,6 +1092,21 @@ export function UjianLisanGuruView({
             </div>
           </div>
         </div>
+
+        {/* TOMBOL SIMPAN MELAYANG KHUSUS HP (FLOATING ACTION BAR DI HP) */}
+        {unsavedSantriIds.size > 0 && (
+          <div className="md:hidden fixed bottom-3 left-3 right-3 z-50 animate-in slide-in-from-bottom duration-200">
+            <button
+              type="button"
+              onClick={handleSaveAllChanges}
+              disabled={isSaving}
+              className="w-full py-3.5 px-4 rounded-2xl bg-amber-500 hover:bg-amber-400 active:scale-98 text-slate-950 font-black text-xs sm:text-sm shadow-xl flex items-center justify-center gap-2 border-2 border-amber-300 ring-4 ring-black/10 cursor-pointer"
+            >
+              <Save className="w-4 h-4" />
+              <span>Simpan {unsavedSantriIds.size} Nilai Baru ke Database</span>
+            </button>
+          </div>
+        )}
 
         {/* ============================================================== */}
         {/* KARTU CATATAN PENSKORAN RESMI (PERSIS DOKUMEN CETAK DI FOTO)   */}
