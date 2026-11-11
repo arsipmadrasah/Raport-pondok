@@ -7,10 +7,16 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependencies and build
 node_modules
 dist
 dist-ssr
 *.local
+
+# Environment Variables & Secrets
+.env
+.env.*
+!.env.example
 
 # Editor directories and files
 .vscode/*
@@ -23,7 +29,7 @@ dist-ssr
 *.sln
 *.sw?
 
-# Backup files
+# Backup & helper files
 *.backup.*
-
+*.bat
 .vercel

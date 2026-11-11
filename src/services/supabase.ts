@@ -4,12 +4,10 @@
 
 export const SUPABASE_CONFIG = {
   url:
-    (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_SUPABASE_URL) ||
-    'https://gpjnbtgyzptxjxdnsctn.supabase.co',
+    (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_SUPABASE_URL) || '',
   publishableKey:
     (typeof import.meta !== 'undefined' &&
-      ((import.meta as any).env?.VITE_SUPABASE_ANON_KEY || (import.meta as any).env?.VITE_SUPABASE_PUBLISHABLE_KEY)) ||
-    'sb_publishable_Q3tZd-fBoeUzG2divhAz4Q_-YIL7Ftx'
+      ((import.meta as any).env?.VITE_SUPABASE_ANON_KEY || (import.meta as any).env?.VITE_SUPABASE_PUBLISHABLE_KEY)) || ''
 };
 
 export async function fetchWithTimeout(resource: RequestInfo | URL, options: RequestInit = {}, timeoutMs = 4500) {
