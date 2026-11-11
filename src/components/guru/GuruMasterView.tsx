@@ -11,9 +11,11 @@ import {
   Save,
   Check,
   UserCheck,
-  Layers
+  Layers,
+  RefreshCw
 } from 'lucide-react';
 import { GuruItem } from '../../constants/initialData';
+import { SupabaseDB } from '../../services/supabase';
 
 interface GuruMasterViewProps {
   guruList: GuruItem[];
@@ -131,7 +133,7 @@ export function GuruMasterView({
   };
 
   // Save guru
-  const handleSaveGuru = (e: React.FormEvent) => {
+  const handleSaveGuru = async (e: React.FormEvent) => {
     e.preventDefault();
     const namaTrim = formNama.trim();
     if (!namaTrim) {
@@ -139,19 +141,19 @@ export function GuruMasterView({
       return;
     }
 
+    let targetGuru: GuruItem;
+    let updated: GuruItem[];
+
     if (editingGuru) {
       // Edit existing
-      const updated = guruList.map((g) =>
-        g.id === editingGuru.id
-          ? {
-              ...g,
-              nama: namaTrim,
-              mapelIds: formMapelIds,
-              kelasIds: formKelasIds,
-              statusAktif: formStatusAktif
-            }
-          : g
-      );
+      targetGuru = {
+        ...editingGuru,
+        nama: namaTrim,
+        mapelIds: formMapelIds,
+        kelasIds: formKelasIds,
+        statusAktif: formStatusAktif
+      };
+      updated = guruList.map((g) => (g.id === editingGuru.id ? targetGuru : g));
       setGuruList(updated);
       try {
         localStorage.setItem('rapor_guru_list', JSON.stringify(updated));
@@ -160,14 +162,14 @@ export function GuruMasterView({
       if (addLog) addLog('EDIT_GURU', `Memperbarui data guru ${namaTrim}`);
     } else {
       // Add new
-      const newGuru: GuruItem = {
+      targetGuru = {
         id: `guru-${Date.now()}`,
         nama: namaTrim,
         mapelIds: formMapelIds,
         kelasIds: formKelasIds,
         statusAktif: formStatusAktif
       };
-      const updated = [...guruList, newGuru];
+      updated = [...guruList, targetGuru];
       setGuruList(updated);
       try {
         localStorage.setItem('rapor_guru_list', JSON.stringify(updated));
@@ -176,19 +178,61 @@ export function GuruMasterView({
       if (addLog) addLog('TAMBAH_GURU', `Menambahkan guru baru ${namaTrim}`);
     }
 
+    // Persist to Supabase
+    try {
+      await SupabaseDB.upsert('guru', {
+        id: targetGuru.id,
+        nama: targetGuru.nama,
+        mapel_ids: targetGuru.mapelIds || [],
+        kelas_ids: targetGuru.kelasIds || [],
+        status_aktif: targetGuru.statusAktif ?? true
+      });
+    } catch (err: any) {
+      console.warn('Gagal menyimpan ke tabel guru di Supabase:', err);
+    }
+
     setIsModalOpen(false);
   };
 
-  // Delete guru
-  const handleDeleteGuru = (guru: GuruItem) => {
-    if (window.confirm(`Apakah Anda yakin ingin menghapus data ${guru.nama}?`)) {
-      const updated = guruList.filter((g) => g.id !== guru.id);
-      setGuruList(updated);
-      try {
-        localStorage.setItem('rapor_guru_list', JSON.stringify(updated));
-      } catch (_) {}
-      showToast(`Data guru ${guru.nama} telah dihapus!`, 'warning');
-      if (addLog) addLog('HAPUS_GURU', `Menghapus data guru ${guru.nama}`);
+  // Delete guru (Permanen dari Supabase & Local)
+  const handleDeleteGuru = async (guru: GuruItem) => {
+    if (!window.confirm(`Apakah Anda yakin ingin menghapus data guru "${guru.nama}" secara permanen?`)) {
+      return;
+    }
+
+    // 1. Optimistic update local state & storage
+    const updated = guruList.filter((g) => g.id !== guru.id);
+    setGuruList(updated);
+    try {
+      localStorage.setItem('rapor_guru_list', JSON.stringify(updated));
+    } catch (_) {}
+
+    // 2. Persist deletion to Supabase
+    try {
+      await SupabaseDB.deleteById('guru', guru.id);
+      showToast(`Data guru ${guru.nama} berhasil dihapus permanen dari Supabase!`, 'success');
+    } catch (err: any) {
+      console.warn('Gagal menghapus dari Supabase:', err);
+      showToast(`Data ${guru.nama} dihapus dari sesi lokal.`, 'warning');
+    }
+
+    if (addLog) addLog('HAPUS_GURU', `Menghapus data guru ${guru.nama}`);
+  };
+
+  // Sync / Push all current guru to Supabase
+  const handleSyncAllToSupabase = async () => {
+    try {
+      const payload = guruList.map((g) => ({
+        id: g.id,
+        nama: g.nama,
+        mapel_ids: g.mapelIds || [],
+        kelas_ids: g.kelasIds || [],
+        status_aktif: g.statusAktif ?? true
+      }));
+      await SupabaseDB.upsert('guru', payload);
+      showToast(`Berhasil menyinkronkan ${guruList.length} data guru ke database Supabase!`, 'success');
+    } catch (err: any) {
+      showToast(`Gagal menyinkronkan ke Supabase: ${err.message || 'Tabel belum ada'}`, 'error');
     }
   };
 
@@ -263,14 +307,26 @@ export function GuruMasterView({
           )}
         </div>
 
-        <button
-          type="button"
-          onClick={handleOpenAddModal}
-          className="px-4 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 active:scale-98 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Tambah Guru Baru</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleSyncAllToSupabase}
+            className="px-3 py-2.5 rounded-xl border border-emerald-200 bg-emerald-50/70 hover:bg-emerald-100 active:scale-98 text-emerald-900 font-bold text-xs flex items-center gap-1.5 shadow-2xs transition cursor-pointer"
+            title="Simpan & sinkronkan seluruh daftar guru saat ini ke database Supabase"
+          >
+            <RefreshCw className="w-3.5 h-3.5 text-emerald-700" />
+            <span className="hidden sm:inline">Sinkron ke Supabase</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleOpenAddModal}
+            className="px-4 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 active:scale-98 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Tambah Guru Baru</span>
+          </button>
+        </div>
       </div>
 
       {/* TABEL DATA GURU & MAPEL YANG DIAJARKAN */}

@@ -290,6 +290,15 @@ CREATE TABLE IF NOT EXISTS public.log_aktivitas (
   user_admin TEXT DEFAULT 'Admin'
 );
 
+CREATE TABLE IF NOT EXISTS public.guru (
+  id TEXT PRIMARY KEY,
+  nama TEXT NOT NULL,
+  mapel_ids JSONB DEFAULT '[]'::jsonb,
+  kelas_ids JSONB DEFAULT '[]'::jsonb,
+  status_aktif BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 ALTER TABLE public.pondok_profile ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tahun_ajaran ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.semester ENABLE ROW LEVEL SECURITY;
@@ -300,6 +309,7 @@ ALTER TABLE public.predikat_config ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.santri ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.nilai ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.log_aktivitas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.guru ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "anon_all_pondok" ON public.pondok_profile;
 CREATE POLICY "anon_all_pondok" ON public.pondok_profile FOR ALL TO anon USING (true) WITH CHECK (true);
@@ -320,4 +330,6 @@ CREATE POLICY "anon_all_santri" ON public.santri FOR ALL TO anon USING (true) WI
 DROP POLICY IF EXISTS "anon_all_nilai" ON public.nilai;
 CREATE POLICY "anon_all_nilai" ON public.nilai FOR ALL TO anon USING (true) WITH CHECK (true);
 DROP POLICY IF EXISTS "anon_all_logs" ON public.log_aktivitas;
-CREATE POLICY "anon_all_logs" ON public.log_aktivitas FOR ALL TO anon USING (true) WITH CHECK (true);`;
+CREATE POLICY "anon_all_logs" ON public.log_aktivitas FOR ALL TO anon USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "anon_all_guru" ON public.guru;
+CREATE POLICY "anon_all_guru" ON public.guru FOR ALL TO anon USING (true) WITH CHECK (true);`;

@@ -631,6 +631,19 @@ export default function App() {
         'santri_id,semester_id,mapel_id'
       );
 
+      try {
+        await SupabaseDB.upsert(
+          'guru',
+          INITIAL_GURU.map((g) => ({
+            id: g.id,
+            nama: g.nama,
+            mapel_ids: g.mapelIds || [],
+            kelas_ids: g.kelasIds || [],
+            status_aktif: g.statusAktif ?? true
+          }))
+        );
+      } catch (_) {}
+
       if (!silent) {
         showToast('Data awal 6 Tingkat Kelas berhasil di-seed ke Supabase PostgreSQL!');
       }
@@ -883,6 +896,26 @@ export default function App() {
             waktu: l.waktu || 'Tersimpan di DB'
           }))
         );
+      }
+
+      // Sync Data Guru langsung dari Supabase
+      try {
+        const guruRows = await SupabaseDB.selectAll('guru', 'nama', true);
+        if (guruRows && guruRows.length > 0) {
+          const loadedGuru: GuruItem[] = guruRows.map((g: any) => ({
+            id: g.id,
+            nama: g.nama,
+            mapelIds: Array.isArray(g.mapel_ids) ? g.mapel_ids : [],
+            kelasIds: Array.isArray(g.kelas_ids) ? g.kelas_ids : [],
+            statusAktif: g.status_aktif !== undefined ? Boolean(g.status_aktif) : true
+          }));
+          setGuruList(loadedGuru);
+          try {
+            localStorage.setItem('rapor_guru_list', JSON.stringify(loadedGuru));
+          } catch (_) {}
+        }
+      } catch (errGuru) {
+        console.warn('Tabel guru di Supabase belum ada atau gagal dibaca:', errGuru);
       }
 
       setDbStatus({
