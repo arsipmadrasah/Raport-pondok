@@ -136,55 +136,26 @@ export function UjianLisanGuruView({
     return guruList.find((g) => g.nama === loginInputName);
   }, [guruList, loginInputName]);
 
-  // Daftar Mapel yang diajarkan oleh guru yang dipilih (berdasarkan setelan Admin Data Guru)
-  const mapelsTaughtByGuru = useMemo(() => {
-    if (!loginInputName) return [];
-    if (selectedGuruObj && selectedGuruObj.mapelIds && selectedGuruObj.mapelIds.length > 0) {
-      const filtered = mapelList.filter(
-        (m) => m.statusAktif && selectedGuruObj.mapelIds.includes(m.id)
-      );
-      if (filtered.length > 0) return filtered;
-    }
-    // Jika belum ditentukan mapelnya di Data Guru, tampilkan seluruh mapel aktif
-    return mapelList.filter((m) => m.statusAktif);
-  }, [loginInputName, selectedGuruObj, mapelList]);
-
-  // Daftar Kelas yang diajar oleh guru yang dipilih (berdasarkan setelan Admin Data Guru)
-  const classesTaughtByGuru = useMemo(() => {
-    if (!loginInputName) return activeKelasList;
-    if (selectedGuruObj && selectedGuruObj.kelasIds && selectedGuruObj.kelasIds.length > 0) {
-      const filtered = activeKelasList.filter((k) =>
-        selectedGuruObj.kelasIds!.includes(k.id)
-      );
-      if (filtered.length > 0) return filtered;
-    }
-    // Jika belum diatur kelasnya di Data Guru, tampilkan semua kelas aktif
-    return activeKelasList;
-  }, [loginInputName, selectedGuruObj, activeKelasList]);
+  // Daftar Kitab / Mapel yang sah diajarkan pada kelas yang sedang dipilih (berdasarkan Pengaturan Kitab Admin)
+  const mapelsInSelectedLoginClass = useMemo(() => {
+    if (!loginSelectedKelasId) return [];
+    return mapelList.filter(
+      (m) => m.statusAktif && isMapelForKelas(m, loginSelectedKelasId)
+    );
+  }, [mapelList, loginSelectedKelasId]);
 
   const [loginSelectedMapelId, setLoginSelectedMapelId] = useState<string>('');
 
-  // Saat guru berganti di form login, otomatis arahkan ke mapel pertama yang diajarkan
+  // Saat kelas berganti di form login, otomatis arahkan ke kitab pertama yang diajarkan di kelas tersebut
   useEffect(() => {
-    if (mapelsTaughtByGuru.length > 0) {
-      if (!mapelsTaughtByGuru.some((m) => m.id === loginSelectedMapelId)) {
-        setLoginSelectedMapelId(mapelsTaughtByGuru[0].id);
+    if (mapelsInSelectedLoginClass.length > 0) {
+      if (!mapelsInSelectedLoginClass.some((m) => m.id === loginSelectedMapelId)) {
+        setLoginSelectedMapelId(mapelsInSelectedLoginClass[0].id);
       }
     } else {
       setLoginSelectedMapelId('');
     }
-  }, [mapelsTaughtByGuru]);
-
-  // Saat guru berganti, arahkan ke kelas pertama yang diajarkan guru tersebut
-  useEffect(() => {
-    if (classesTaughtByGuru.length > 0) {
-      if (!classesTaughtByGuru.some((k) => k.id === loginSelectedKelasId)) {
-        setLoginSelectedKelasId(classesTaughtByGuru[0].id);
-      }
-    } else {
-      setLoginSelectedKelasId('');
-    }
-  }, [classesTaughtByGuru]);
+  }, [mapelsInSelectedLoginClass]);
 
   const [selectedMapelId, setSelectedMapelId] = useState<string>('');
 
@@ -195,12 +166,12 @@ export function UjianLisanGuruView({
       showToast('Silakan pilih nama guru / ustadz penguji terlebih dahulu!', 'warning');
       return;
     }
-    if (!loginSelectedMapelId) {
-      showToast('Silakan pilih mata pelajaran / kitab yang diajarkan!', 'warning');
+    if (!loginSelectedKelasId) {
+      showToast('Silakan pilih kelas / rombel yang akan diuji!', 'warning');
       return;
     }
-    if (!loginSelectedKelasId) {
-      showToast('Silakan pilih kelas / rombel yang akan dinilai!', 'warning');
+    if (!loginSelectedMapelId) {
+      showToast('Silakan pilih mata pelajaran / kitab yang diuji!', 'warning');
       return;
     }
     setSelectedKelasId(loginSelectedKelasId);
@@ -218,7 +189,7 @@ export function UjianLisanGuruView({
   };
 
   const handleBackToSelection = () => {
-    // Kembali ke form login/pemilihan kelas & kitab tanpa menghapus nama guru
+    // Kembali ke form pemilihan kelas & kitab tanpa menghapus nama guru
     setIsLoggedIn(false);
   };
 
@@ -234,20 +205,12 @@ export function UjianLisanGuruView({
     setIsLoggedIn(false);
   };
 
-  // Mapel / Kitab yang berlaku untuk kelas terpilih (difilter berdasarkan mapel guru jika ada)
+  // Mapel / Kitab yang sah diajarkan di kelas terpilih (sesuai Pengaturan Kitab & Peruntukan Kelas)
   const availableMapels = useMemo(() => {
-    const classMapels = mapelList.filter(
+    return mapelList.filter(
       (m) => m.statusAktif && isMapelForKelas(m, selectedKelasId)
     );
-    // Jika guru punya mapel khusus, prioritaskan atau filter
-    if (selectedGuruObj && selectedGuruObj.mapelIds && selectedGuruObj.mapelIds.length > 0) {
-      const guruClassMapels = classMapels.filter((m) =>
-        selectedGuruObj.mapelIds.includes(m.id)
-      );
-      if (guruClassMapels.length > 0) return guruClassMapels;
-    }
-    return classMapels;
-  }, [mapelList, selectedKelasId, selectedGuruObj]);
+  }, [mapelList, selectedKelasId]);
 
   useEffect(() => {
     if (availableMapels.length > 0) {
@@ -461,66 +424,55 @@ export function UjianLisanGuruView({
               </select>
             </div>
 
-            {/* 2. Pilih Mata Pelajaran (Kitab) yang Diajarkan */}
+            {/* 2. Pilih Kelas yang Diuji */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-800 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <Layers className="w-4 h-4 text-emerald-700" />
+                  <span>Pilih Kelas yang Diuji :</span>
+                </span>
+                <span className="text-[10px] text-slate-500 font-semibold">
+                  {activeKelasList.length} Kelas Aktif
+                </span>
+              </label>
+              <select
+                value={loginSelectedKelasId}
+                onChange={(e) => setLoginSelectedKelasId(e.target.value)}
+                className="w-full px-3.5 py-3 rounded-xl bg-slate-50 border border-slate-300 text-xs sm:text-sm font-semibold text-slate-900 cursor-pointer focus:ring-2 focus:ring-emerald-600 focus:outline-none"
+              >
+                {activeKelasList.map((k) => (
+                  <option key={k.id} value={k.id}>
+                    Kelas {k.namaKelas} (Tingkat {normalizeTingkat(k.tingkat, k.namaKelas)})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* 3. Pilih Mata Pelajaran / Kitab (Otomatis Sesuai Kitab yang Diajarkan di Kelas Terpilih) */}
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-800 flex items-center justify-between">
                 <span className="flex items-center gap-1.5">
                   <BookOpen className="w-4 h-4 text-emerald-700" />
                   <span>Pilih Mata Pelajaran / Kitab :</span>
                 </span>
-                {loginInputName && mapelsTaughtByGuru.length > 0 && (
-                  <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded">
-                    ✓ {mapelsTaughtByGuru.length} Kitab
+                {mapelsInSelectedLoginClass.length > 0 && (
+                  <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                    ✓ {mapelsInSelectedLoginClass.length} Kitab di Kelas Ini
                   </span>
                 )}
               </label>
               <select
                 value={loginSelectedMapelId}
                 onChange={(e) => setLoginSelectedMapelId(e.target.value)}
-                disabled={!loginInputName || mapelsTaughtByGuru.length === 0}
+                disabled={mapelsInSelectedLoginClass.length === 0}
                 className="w-full px-3.5 py-3 rounded-xl bg-slate-50 border border-slate-300 text-xs sm:text-sm font-semibold text-slate-900 cursor-pointer focus:ring-2 focus:ring-emerald-600 focus:outline-none disabled:opacity-50"
               >
-                {!loginInputName ? (
-                  <option value="">(Pilih guru terlebih dahulu)</option>
-                ) : mapelsTaughtByGuru.length === 0 ? (
-                  <option value="">(Guru ini belum memiliki mapel terdaftar)</option>
+                {mapelsInSelectedLoginClass.length === 0 ? (
+                  <option value="">(Belum ada kitab yang diatur untuk kelas ini)</option>
                 ) : (
-                  mapelsTaughtByGuru.map((m) => (
+                  mapelsInSelectedLoginClass.map((m) => (
                     <option key={m.id} value={m.id}>
-                      {m.namaLatin} ({m.namaArab})
-                    </option>
-                  ))
-                )}
-              </select>
-            </div>
-
-            {/* 3. Pilih Kelas / Rombel */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-800 flex items-center justify-between">
-                <span className="flex items-center gap-1.5">
-                  <Layers className="w-4 h-4 text-emerald-700" />
-                  <span>Pilih Kelas / Rombel :</span>
-                </span>
-                {loginInputName && classesTaughtByGuru.length > 0 && (
-                  <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded">
-                    ✓ {classesTaughtByGuru.length} Kelas
-                  </span>
-                )}
-              </label>
-              <select
-                value={loginSelectedKelasId}
-                onChange={(e) => setLoginSelectedKelasId(e.target.value)}
-                disabled={!loginInputName || classesTaughtByGuru.length === 0}
-                className="w-full px-3.5 py-3 rounded-xl bg-slate-50 border border-slate-300 text-xs sm:text-sm font-semibold text-slate-900 cursor-pointer focus:ring-2 focus:ring-emerald-600 focus:outline-none disabled:opacity-50"
-              >
-                {!loginInputName ? (
-                  <option value="">(Pilih guru terlebih dahulu)</option>
-                ) : classesTaughtByGuru.length === 0 ? (
-                  <option value="">(Guru ini belum memiliki kelas terdaftar)</option>
-                ) : (
-                  classesTaughtByGuru.map((k) => (
-                    <option key={k.id} value={k.id}>
-                      Kelas {k.namaKelas} (Tingkat {normalizeTingkat(k.tingkat, k.namaKelas)})
+                      {m.namaLatin} {m.namaArab ? `(${m.namaArab})` : ''}
                     </option>
                   ))
                 )}
