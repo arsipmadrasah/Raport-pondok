@@ -1434,18 +1434,6 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-2.5 sm:gap-3.5 relative z-10 shrink-0">
-            {/* TOMBOL BUKA MODE UJIAN GURU */}
-            <button
-              type="button"
-              onClick={enterGuruMode}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-95 text-slate-900 font-bold text-xs shadow-2xs transition cursor-pointer"
-              title="Buka Lembar Ujian Santri untuk Guru Penilai (/guru)"
-            >
-              <BookOpen className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Mode Ujian Guru</span>
-              <span className="sm:hidden">Ujian</span>
-            </button>
-
             {/* PEMILIHAN TAHUN AJARAN & SEMESTER */}
             <div className="relative">
               <button
