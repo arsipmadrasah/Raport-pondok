@@ -183,7 +183,7 @@ export function UjianLisanGuruView({
       sessionStorage.setItem('guru_session_mapel', loginSelectedMapelId);
       sessionStorage.setItem('guru_session_kelas', loginSelectedKelasId);
       localStorage.removeItem('guru_logged_in_name'); // bersihkan cache lama
-    } catch (_) {}
+    } catch (_) { }
     setIsLoggedIn(true);
     showToast(`Ahlan wa Sahlan, ${finalName}. Selamat bertugas!`, 'success');
   };
@@ -200,7 +200,7 @@ export function UjianLisanGuruView({
       sessionStorage.removeItem('guru_session_mapel');
       sessionStorage.removeItem('guru_session_kelas');
       localStorage.removeItem('guru_logged_in_name');
-    } catch (_) {}
+    } catch (_) { }
     setLoginInputName('');
     setIsLoggedIn(false);
   };
@@ -260,7 +260,7 @@ export function UjianLisanGuruView({
         });
         setExamItems(initial);
       }
-    } catch (_) {}
+    } catch (_) { }
     setUnsavedSantriIds(new Set());
   }, [storageKey, selectedKelasId, selectedMapelId, selectedSemesterId]);
 
@@ -305,7 +305,7 @@ export function UjianLisanGuruView({
     setExamItems(updatedMap);
     try {
       localStorage.setItem(storageKey, JSON.stringify(updatedMap));
-    } catch (_) {}
+    } catch (_) { }
 
     // Tandai bahwa ada perubahan yang belum disimpan permanen ke database
     setUnsavedSantriIds((prev) => new Set(prev).add(santriId));
@@ -531,11 +531,10 @@ export function UjianLisanGuruView({
                 type="button"
                 onClick={handleSaveAllChanges}
                 disabled={isSaving}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-black transition cursor-pointer shadow-xs ${
-                  unsavedSantriIds.size > 0
-                    ? 'bg-amber-400 text-slate-950 ring-2 ring-amber-300 animate-pulse'
-                    : 'bg-emerald-600 text-white border border-emerald-400/50'
-                }`}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-black transition cursor-pointer shadow-xs ${unsavedSantriIds.size > 0
+                  ? 'bg-amber-400 text-slate-950 ring-2 ring-amber-300 animate-pulse'
+                  : 'bg-emerald-600 text-white border border-emerald-400/50'
+                  }`}
                 title="Simpan nilai ke database"
               >
                 <Save className="w-3.5 h-3.5" />
@@ -582,11 +581,10 @@ export function UjianLisanGuruView({
               type="button"
               onClick={handleSaveAllChanges}
               disabled={isSaving}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer shadow-sm ${
-                unsavedSantriIds.size > 0
-                  ? 'bg-amber-400 hover:bg-amber-300 text-slate-950 ring-2 ring-amber-300 animate-pulse'
-                  : 'bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-400/50'
-              }`}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer shadow-sm ${unsavedSantriIds.size > 0
+                ? 'bg-amber-400 hover:bg-amber-300 text-slate-950 ring-2 ring-amber-300 animate-pulse'
+                : 'bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-400/50'
+                }`}
               title="Simpan nilai ke database"
             >
               <Save className="w-4 h-4" />
@@ -594,8 +592,8 @@ export function UjianLisanGuruView({
                 {isSaving
                   ? 'Menyimpan...'
                   : unsavedSantriIds.size > 0
-                  ? `Simpan (${unsavedSantriIds.size})`
-                  : 'Simpan'}
+                    ? `Simpan (${unsavedSantriIds.size})`
+                    : 'Simpan'}
               </span>
             </button>
 
@@ -685,15 +683,14 @@ export function UjianLisanGuruView({
               return (
                 <div
                   key={santri.id}
-                  className={`p-3.5 rounded-2xl border transition shadow-xs ${
-                    isUnsaved
-                      ? 'border-amber-400 bg-amber-50/50 ring-1 ring-amber-300'
-                      : isRemedial
+                  className={`p-3.5 rounded-2xl border transition shadow-xs ${isUnsaved
+                    ? 'border-amber-400 bg-amber-50/50 ring-1 ring-amber-300'
+                    : isRemedial
                       ? 'border-rose-200 bg-rose-50/30'
                       : calc.isLulus
-                      ? 'border-emerald-200 bg-emerald-50/20'
-                      : 'border-slate-200 bg-white'
-                  }`}
+                        ? 'border-emerald-200 bg-emerald-50/20'
+                        : 'border-slate-200 bg-white'
+                    }`}
                 >
                   {/* Baris Atas: Nomor, Nama Santri, & Status Kelulusan */}
                   <div className="flex items-start justify-between gap-2.5 border-b border-slate-100 pb-2.5">
@@ -718,9 +715,8 @@ export function UjianLisanGuruView({
                           <div className="text-right">
                             <span className="text-[10px] text-slate-500 font-bold">Rata: </span>
                             <span
-                              className={`text-xs font-black ${
-                                calc.isLulus ? 'text-emerald-700' : 'text-rose-600'
-                              }`}
+                              className={`text-xs font-black ${calc.isLulus ? 'text-emerald-700' : 'text-rose-600'
+                                }`}
                             >
                               {calc.avg.toFixed(2)}
                             </span>
@@ -773,13 +769,12 @@ export function UjianLisanGuruView({
                                 }
                               }
                             }}
-                            className={`w-full text-center py-2.5 rounded-xl border-2 text-base font-black transition shadow-2xs focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-600 focus:bg-white ${
-                              val === ''
-                                ? 'border-slate-200 bg-slate-50 text-slate-700 placeholder:text-slate-300'
-                                : Number(val) >= 2.7
+                            className={`w-full text-center py-2.5 rounded-xl border-2 text-base font-black transition shadow-2xs focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-600 focus:bg-white ${val === ''
+                              ? 'border-slate-200 bg-slate-50 text-slate-700 placeholder:text-slate-300'
+                              : Number(val) >= 2.7
                                 ? 'border-emerald-500 bg-emerald-50/80 text-emerald-950 font-black'
                                 : 'border-rose-400 bg-rose-50/80 text-rose-900 font-black'
-                            }`}
+                              }`}
                           />
                         </div>
                       );
@@ -916,13 +911,12 @@ export function UjianLisanGuruView({
                                       }
                                     }
                                   }}
-                                  className={`w-14 text-center py-1.5 rounded-lg border-2 font-black text-sm transition focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white shadow-2xs ${
-                                    val === ''
-                                      ? 'border-slate-300 bg-slate-50/70 text-slate-700 placeholder:text-slate-300'
-                                      : Number(val) >= 2.7
+                                  className={`w-14 text-center py-1.5 rounded-lg border-2 font-black text-sm transition focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white shadow-2xs ${val === ''
+                                    ? 'border-slate-300 bg-slate-50/70 text-slate-700 placeholder:text-slate-300'
+                                    : Number(val) >= 2.7
                                       ? 'border-emerald-500 bg-emerald-50/70 text-emerald-950'
                                       : 'border-rose-400 bg-rose-50/70 text-rose-900'
-                                  }`}
+                                    }`}
                                 />
                               </div>
                             </td>
@@ -936,13 +930,12 @@ export function UjianLisanGuruView({
 
                         {/* Rata-Rata */}
                         <td
-                          className={`py-2 px-2 text-center font-black border-r border-slate-200 bg-slate-50/90 text-sm ${
-                            calc.avg === null
-                              ? 'text-slate-300'
-                              : calc.isLulus
+                          className={`py-2 px-2 text-center font-black border-r border-slate-200 bg-slate-50/90 text-sm ${calc.avg === null
+                            ? 'text-slate-300'
+                            : calc.isLulus
                               ? 'text-emerald-700'
                               : 'text-rose-600'
-                          }`}
+                            }`}
                         >
                           {calc.avg !== null ? calc.avg.toFixed(2) : '—'}
                         </td>
@@ -989,8 +982,8 @@ export function UjianLisanGuruView({
                   {isSaving
                     ? 'Menyimpan...'
                     : unsavedSantriIds.size > 0
-                    ? `Simpan (${unsavedSantriIds.size})`
-                    : 'Simpan'}
+                      ? `Simpan (${unsavedSantriIds.size})`
+                      : 'Simpan'}
                 </span>
               </button>
             </div>
