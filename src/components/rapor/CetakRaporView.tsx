@@ -2,12 +2,11 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   Loader2,
   Printer,
-  CheckSquare,
-  Square,
-  AlertTriangle,
   ChevronDown,
-  ChevronUp,
-  FileText
+  Search,
+  Users,
+  Info,
+  GraduationCap
 } from 'lucide-react';
 import { calculateClassAcademicReport, toArabicNumerals, isMapelForKelas } from '../../utils/academicHelpers';
 import { normalizeTingkat } from '../../constants/initialData';
@@ -54,9 +53,10 @@ export function CetakRaporView({
     [santriInKelas, classMapels, nilaiList, selectedSemesterId, predikatList]
   );
 
-  const [selectedSantriIds, setSelectedSantriIds] = useState([]);
+  const [selectedSantriIds, setSelectedSantriIds] = useState<string[]>([]);
   const [showRankOnRapor, setShowRankOnRapor] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     if (evaluations.length > 0) {
@@ -66,18 +66,52 @@ export function CetakRaporView({
     }
   }, [selectedKelasId, evaluations.length]);
 
+  // Santri yang terfilter oleh pencarian nama atau NIS
+  const filteredEvaluations = useMemo(() => {
+    if (!searchQuery.trim()) return evaluations;
+    const q = searchQuery.toLowerCase().trim();
+    return evaluations.filter(
+      (e) =>
+        e.santri.namaLengkap.toLowerCase().includes(q) ||
+        (e.santri.nis && e.santri.nis.toLowerCase().includes(q))
+    );
+  }, [evaluations, searchQuery]);
+
+  // Status Pilih Semua
+  const isAllSelected = useMemo(() => {
+    if (filteredEvaluations.length === 0) return false;
+    return filteredEvaluations.every((e) => selectedSantriIds.includes(e.santri.id));
+  }, [filteredEvaluations, selectedSantriIds]);
+
+  const handleToggleSelectAll = () => {
+    if (isAllSelected) {
+      const filteredIds = new Set(filteredEvaluations.map((e) => e.santri.id));
+      setSelectedSantriIds((prev) => prev.filter((id) => !filteredIds.has(id)));
+    } else {
+      const newSelected = new Set(selectedSantriIds);
+      filteredEvaluations.forEach((e) => newSelected.add(e.santri.id));
+      setSelectedSantriIds(Array.from(newSelected));
+    }
+  };
+
+  // Split ke 2 Kolom Simetris (Kiri dan Kanan)
+  const { leftColumnEvaluations, rightColumnEvaluations } = useMemo(() => {
+    const total = filteredEvaluations.length;
+    const half = Math.ceil(total / 2);
+    return {
+      leftColumnEvaluations: filteredEvaluations.slice(0, half),
+      rightColumnEvaluations: filteredEvaluations.slice(half)
+    };
+  }, [filteredEvaluations]);
+
   const selectedEvaluations = evaluations.filter((e) =>
     selectedSantriIds.includes(e.santri.id)
   );
 
-  const handleToggleSantri = (id) => {
+  const handleToggleSantri = (id: string) => {
     setSelectedSantriIds((prev) =>
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
     );
-  };
-
-  const handleSelectAllKelas = () => {
-    setSelectedSantriIds(evaluations.map((e) => e.santri.id));
   };
 
   const loadHtml2PdfScript = () =>
@@ -266,51 +300,244 @@ export function CetakRaporView({
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div className="no-print bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-2.5">
-            <select
-              value={selectedKelasId}
-              onChange={(e) => setSelectedKelasId(e.target.value)}
-              className="px-3.5 py-2 rounded-xl border border-slate-300 text-xs font-bold"
-            >
-              {[...kelasList]
-                .sort(
-                  (a, b) =>
-                    normalizeTingkat(a.tingkat, a.namaKelas) -
-                    normalizeTingkat(b.tingkat, b.namaKelas)
-                )
-                .map((k) => (
-                  <option key={k.id} value={k.id}>
-                    Tingkat {normalizeTingkat(k.tingkat, k.namaKelas)} — Kelas {k.namaKelas} ({k.waliKelas})
-                  </option>
-                ))}
-            </select>
+      {/* KARTU UTAMA CETAK RAPOR SANTRI */}
+      <div className="no-print bg-white p-5 sm:p-6 rounded-3xl border border-slate-200/90 shadow-xs space-y-4">
+        {/* HEADER KARTU */}
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+            <Printer className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="text-base sm:text-lg font-black text-slate-900 leading-tight">
+              Cetak Rapor Santri
+            </h3>
+            <p className="text-xs text-slate-500">
+              Pilih kelas dan santri, lalu cetak atau simpan rapor dalam format PDF (A4).
+            </p>
+          </div>
+        </div>
 
-            <button
-              type="button"
-              onClick={handleSelectAllKelas}
-              className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold"
-            >
-              Pilih Semua ({evaluations.length})
-            </button>
-
-            <label className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer bg-slate-50 px-3 py-2 rounded-xl border border-slate-200">
-              <input
-                type="checkbox"
-                checked={showRankOnRapor}
-                onChange={(e) => setShowRankOnRapor(e.target.checked)}
-                className="rounded text-emerald-700"
-              />
-              <span>Tampilkan Peringkat</span>
+        {/* BARIS KONTROL & FILTER (HORIZONTAL 1 BARIS RAPI) */}
+        <div className="flex flex-wrap items-end gap-3 sm:gap-4 pt-1">
+          {/* Pilihan Kelas */}
+          <div className="flex-1 min-w-[220px] max-w-xs">
+            <label className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5 mb-1">
+              <GraduationCap className="w-3.5 h-3.5 text-emerald-700" />
+              <span>Kelas</span>
             </label>
+            <div className="relative">
+              <select
+                value={selectedKelasId}
+                onChange={(e) => setSelectedKelasId(e.target.value)}
+                className="w-full pl-3.5 pr-8 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm font-semibold text-slate-800 bg-white hover:border-slate-300 focus:ring-2 focus:ring-emerald-600 focus:outline-none appearance-none cursor-pointer shadow-2xs transition"
+              >
+                {[...kelasList]
+                  .sort(
+                    (a, b) =>
+                      normalizeTingkat(a.tingkat, a.namaKelas) -
+                      normalizeTingkat(b.tingkat, b.namaKelas)
+                  )
+                  .map((k) => (
+                    <option key={k.id} value={k.id}>
+                      Kelas {k.namaKelas} ({k.waliKelas || 'Wali Kelas'})
+                    </option>
+                  ))}
+              </select>
+              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+          </div>
+
+          {/* Checkbox Tampilkan Peringkat */}
+          <label className="flex items-center gap-2 cursor-pointer select-none py-2 px-1">
+            <input
+              type="checkbox"
+              checked={showRankOnRapor}
+              onChange={(e) => setShowRankOnRapor(e.target.checked)}
+              className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 cursor-pointer accent-emerald-600"
+            />
+            <span className="text-xs font-semibold text-slate-800">Tampilkan Peringkat</span>
+          </label>
+
+          {/* Checkbox Pilih Semua */}
+          <label className="flex items-center gap-2 cursor-pointer select-none py-2 px-1">
+            <input
+              type="checkbox"
+              checked={isAllSelected}
+              onChange={handleToggleSelectAll}
+              className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 cursor-pointer accent-emerald-600"
+            />
+            <span className="text-xs font-semibold text-slate-800">Pilih Semua</span>
+          </label>
+
+          {/* Bilah Pencarian Santri (Sisi Kanan) */}
+          <div className="relative flex-1 min-w-[200px] max-w-xs ml-auto">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Cari nama santri..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-7 py-2 rounded-xl border border-slate-200 text-xs text-slate-800 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-600 focus:outline-none bg-white transition"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* TABEL DAFTAR SANTRI MODEL 2 KOLOM SEJAJAR (SPLIT-COLUMN GRID) */}
+        <div className="rounded-2xl border border-slate-200 overflow-hidden bg-white shadow-2xs">
+          {/* Header Bar Tabel Hijau Pastel */}
+          <div className="bg-emerald-50/70 border-b border-emerald-100/90 px-4 py-2.5 flex items-center justify-between">
+            <div className="flex items-center gap-2 text-emerald-950 font-bold text-xs sm:text-sm">
+              <Users className="w-4 h-4 text-emerald-700" />
+              <span>Daftar Santri ({evaluations.length} Santri)</span>
+            </div>
+            <div className="text-[11px] font-bold text-emerald-800 bg-emerald-100/90 border border-emerald-300/80 px-2.5 py-0.5 rounded-full shadow-2xs">
+              Dipilih: {selectedSantriIds.length} santri
+            </div>
+          </div>
+
+          {/* Body Tabel 2 Kolom */}
+          {filteredEvaluations.length === 0 ? (
+            <div className="p-8 text-center text-xs text-slate-400 font-semibold">
+              Tidak ada santri yang cocok dengan pencarian "{searchQuery}".
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 md:divide-x divide-slate-200">
+              {/* Kolom Kiri */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-200 text-slate-600 font-bold text-[11px] bg-slate-50/60">
+                      <th className="py-2 px-3 w-12 text-center">No</th>
+                      <th className="py-2 px-2 w-10 text-center"></th>
+                      <th className="py-2 px-3">Nama Santri</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {leftColumnEvaluations.map((ev, idx) => {
+                      const isSelected = selectedSantriIds.includes(ev.santri.id);
+                      const realIndex = idx + 1;
+                      return (
+                        <tr
+                          key={ev.santri.id}
+                          onClick={() => handleToggleSantri(ev.santri.id)}
+                          className={`transition cursor-pointer select-none ${
+                            isSelected
+                              ? 'bg-emerald-50/90 text-emerald-950 font-bold'
+                              : 'hover:bg-slate-50 text-slate-700 font-normal'
+                          }`}
+                        >
+                          <td className="py-2 px-3 text-center text-slate-500 font-semibold w-12 text-[11px]">
+                            {realIndex}
+                          </td>
+                          <td className="py-2 px-2 text-center w-10">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => {}} // dikontrol oleh onClick baris
+                              className="w-4 h-4 rounded text-emerald-600 border-slate-300 cursor-pointer accent-emerald-600"
+                            />
+                          </td>
+                          <td className="py-2 px-3">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="truncate">{ev.santri.namaLengkap}</span>
+                              {!ev.isComplete && (
+                                <span
+                                  title="Nilai santri belum lengkap"
+                                  className="text-amber-500 shrink-0 text-xs"
+                                >
+                                  ⚠️
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Kolom Kanan */}
+              <div className="overflow-x-auto border-t md:border-t-0 border-slate-200">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-200 text-slate-600 font-bold text-[11px] bg-slate-50/60">
+                      <th className="py-2 px-3 w-12 text-center">No</th>
+                      <th className="py-2 px-2 w-10 text-center"></th>
+                      <th className="py-2 px-3">Nama Santri</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {rightColumnEvaluations.map((ev, idx) => {
+                      const isSelected = selectedSantriIds.includes(ev.santri.id);
+                      const realIndex = leftColumnEvaluations.length + idx + 1;
+                      return (
+                        <tr
+                          key={ev.santri.id}
+                          onClick={() => handleToggleSantri(ev.santri.id)}
+                          className={`transition cursor-pointer select-none ${
+                            isSelected
+                              ? 'bg-emerald-50/90 text-emerald-950 font-bold'
+                              : 'hover:bg-slate-50 text-slate-700 font-normal'
+                          }`}
+                        >
+                          <td className="py-2 px-3 text-center text-slate-500 font-semibold w-12 text-[11px]">
+                            {realIndex}
+                          </td>
+                          <td className="py-2 px-2 text-center w-10">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => {}}
+                              className="w-4 h-4 rounded text-emerald-600 border-slate-300 cursor-pointer accent-emerald-600"
+                            />
+                          </td>
+                          <td className="py-2 px-3">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="truncate">{ev.santri.namaLengkap}</span>
+                              {!ev.isComplete && (
+                                <span
+                                  title="Nilai santri belum lengkap"
+                                  className="text-amber-500 shrink-0 text-xs"
+                                >
+                                  ⚠️
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* FOOTER BAR DENGAN TOMBOL BIRU ROYAL */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1">
+          <div className="flex items-center gap-1.5 text-xs text-slate-600 font-medium">
+            <Info className="w-4 h-4 text-sky-600 shrink-0" />
+            <span>
+              <strong>{selectedSantriIds.length} santri</strong> dipilih dari {evaluations.length} santri
+            </span>
           </div>
 
           <button
             type="button"
             onClick={triggerPrint}
             disabled={selectedEvaluations.length === 0 || isGeneratingPdf}
-            className="w-full sm:w-auto px-5 py-3 sm:py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 active:scale-[0.99] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 cursor-pointer transition"
+            className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-98 text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 cursor-pointer transition"
           >
             {isGeneratingPdf ? (
               <>
@@ -324,32 +551,6 @@ export function CetakRaporView({
               </>
             )}
           </button>
-        </div>
-
-        <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100">
-          {evaluations.map((ev) => {
-            const selected = selectedSantriIds.includes(ev.santri.id);
-            return (
-              <button
-                key={ev.santri.id}
-                onClick={() => handleToggleSantri(ev.santri.id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-2 border transition ${selected
-                  ? 'bg-emerald-900 text-white border-emerald-900'
-                  : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-                  }`}
-              >
-                {selected ? (
-                  <CheckSquare className="w-3.5 h-3.5 text-amber-400" />
-                ) : (
-                  <Square className="w-3.5 h-3.5 text-slate-400" />
-                )}
-                <span className="truncate max-w-[180px]">{ev.santri.namaLengkap}</span>
-                {!ev.isComplete && (
-                  <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                )}
-              </button>
-            );
-          })}
         </div>
       </div>
 
