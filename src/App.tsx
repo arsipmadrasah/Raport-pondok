@@ -20,8 +20,7 @@ import {
   Copy,
   AlertTriangle,
   CheckCircle2,
-  GraduationCap,
-  ArrowRight
+  GraduationCap
 } from 'lucide-react';
 
 import {
@@ -1371,21 +1370,6 @@ export default function App() {
               </div>
             );
           })}
-
-          {/* TOMBOL PORTAL UJIAN GURU */}
-          <div className="pt-3 mt-2 border-t border-emerald-900/60">
-            <button
-              type="button"
-              onClick={enterGuruMode}
-              className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-left text-xs font-bold transition-all bg-amber-500/15 hover:bg-amber-500/25 text-amber-200 border border-amber-500/30 hover:border-amber-400/60 shadow-xs group"
-            >
-              <div className="flex items-center gap-2.5 min-w-0">
-                <GraduationCap className="w-4 h-4 shrink-0 text-amber-400 group-hover:scale-110 transition-transform" />
-                <span className="truncate">Portal Ujian Guru</span>
-              </div>
-              <ArrowRight className="w-3.5 h-3.5 text-amber-300/80 group-hover:translate-x-0.5 transition-transform" />
-            </button>
-          </div>
         </nav>
 
         {/* SILUET MASJID ISLAMI DI BAGIAN BAWAH SIDEBAR */}
@@ -1448,17 +1432,6 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-2.5 sm:gap-3.5 relative z-10 shrink-0">
-            {/* TOMBOL CEPAT MASUK KE PORTAL UJIAN GURU */}
-            <button
-              type="button"
-              onClick={enterGuruMode}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs transition shadow-2xs hover:shadow active:scale-95 shrink-0"
-              title="Buka Portal Ujian Syafahi / Login Guru Penguji"
-            >
-              <GraduationCap className="w-4 h-4 text-slate-950" />
-              <span className="hidden sm:inline">Portal Ujian Guru</span>
-            </button>
-
             {/* PEMILIHAN TAHUN AJARAN & SEMESTER */}
             <div className="relative">
               <button
