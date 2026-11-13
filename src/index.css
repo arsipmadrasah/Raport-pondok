@@ -64,3 +64,52 @@
     margin: 0 auto !important;
   }
 }
+
+/* ============================================================ */
+/* Painter Kid & Liquid Splash Animation Scene                   */
+/* ============================================================ */
+.painter-scene {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fluid-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.paint-splash-svg {
+  position: absolute;
+  width: min(920px, 100vw);
+  height: auto;
+  max-height: 90dvh;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.kid-svg {
+  position: absolute;
+  left: max(2vw, calc(50% - 440px));
+  bottom: max(6dvh, calc(50% - 210px));
+  width: clamp(210px, 26vw, 330px);
+  height: auto;
+  overflow: visible;
+  filter: drop-shadow(0 14px 26px rgba(120, 88, 0, 0.16));
+  pointer-events: none;
+}
+
+@media (max-width: 900px) {
+  .kid-svg {
+    left: 0.5rem;
+    bottom: 2dvh;
+    width: 195px;
+  }
+}

@@ -1,4 +1,5 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import gsap from 'gsap';
 import {
   User,
   Users,
@@ -22,6 +23,8 @@ import {
   ChevronDown
 } from 'lucide-react';
 import santriEmberImg from '../../assets/santri_ember.png';
+import { PainterKidScene } from './PainterKidScene';
+import { runLiquidSplash } from '../../utils/liquidSplash';
 import { normalizeTingkat, GuruItem } from '../../constants/initialData';
 import { isMapelForKelas } from '../../utils/academicHelpers';
 import { BaliBinaInsaniLogo } from '../common/BaliBinaInsaniLogo';
@@ -132,6 +135,132 @@ export function UjianLisanGuruView({
   const [loginSelectedKelasId, setLoginSelectedKelasId] = useState<string>(
     activeKelasList[0]?.id || ''
   );
+
+  // Animasi GSAP Karakter Santri Melempar Ember & Munculnya Kartu Login
+  const [isIntroDone, setIsIntroDone] = useState(false);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const sceneRef = useRef<HTMLDivElement>(null);
+  const loginLayerRef = useRef<HTMLDivElement>(null);
+  const cancelSplashRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    if (isLoggedIn) return;
+    const stage = stageRef.current;
+    const scene = sceneRef.current;
+    const loginLayer = loginLayerRef.current;
+    if (!stage || !scene || !loginLayer) return;
+
+    const ctx = gsap.context(() => {
+      const kidRoot = scene.querySelector('[data-part="kid-root"]');
+      const kidBody = scene.querySelector('[data-part="kid-body-group"]');
+      const kidShadow = scene.querySelector('[data-part="kid-shadow"]');
+      const legFront = scene.querySelector('[data-part="leg-front"]');
+      const legBack = scene.querySelector('[data-part="leg-back"]');
+      const armFront = scene.querySelector('[data-part="arm-front"]');
+      const armBack = scene.querySelector('[data-part="arm-back"]');
+      const bucket = scene.querySelector('[data-part="bucket"]');
+      const fluidCanvas = scene.querySelector('[data-part="fluid-canvas"]') as HTMLCanvasElement | null;
+      const splashCore = scene.querySelector('[data-part="splash-core"]');
+      const staggerItems = loginLayer.querySelectorAll('.gs-stagger');
+
+      const exitDistance = Math.max(window.innerWidth + 280, 1320);
+
+      // Initial states (Kartu login dan komponen tersembunyi dahulu)
+      gsap.set(loginLayer, { opacity: 0, scale: 0.78, y: 18, pointerEvents: 'none' });
+      gsap.set(staggerItems, { opacity: 0, y: 12 });
+      gsap.set(splashCore, { scale: 0, opacity: 0, svgOrigin: '400 300' });
+
+      gsap.set(kidRoot, { x: -380, opacity: 1 });
+      gsap.set([legFront, legBack], { svgOrigin: '106 196' });
+      gsap.set(legFront, { rotation: -20 });
+      gsap.set(legBack, { rotation: 20 });
+      gsap.set(armFront, { svgOrigin: '114 140', rotation: 0 });
+      gsap.set(armBack, { svgOrigin: '126 144', rotation: 0 });
+      gsap.set(bucket, { transformOrigin: '29px 10px', rotation: -7 });
+      gsap.set(kidBody, { svgOrigin: '108 190', rotation: 0, y: 0 });
+      gsap.set(kidShadow, { svgOrigin: '110 252', scaleX: 1 });
+
+      const tl = gsap.timeline({
+        onComplete: () => {
+          setIsIntroDone(true);
+        },
+      });
+
+      // 1. Santri berjalan masuk dari kiri membawa ember (0s -> 2.16s, 8 langkah)
+      tl.to(kidRoot, { x: 0, duration: 2.16, ease: 'none' }, 0)
+        .to(kidBody, { y: -4, repeat: 7, yoyo: true, duration: 0.27, ease: 'sine.inOut' }, 0)
+        .to(kidShadow, { scaleX: 0.92, repeat: 7, yoyo: true, duration: 0.27, ease: 'sine.inOut' }, 0)
+        .to(legFront, { rotation: 20, repeat: 7, yoyo: true, duration: 0.27, ease: 'sine.inOut' }, 0)
+        .to(legBack, { rotation: -20, repeat: 7, yoyo: true, duration: 0.27, ease: 'sine.inOut' }, 0)
+        .to(armBack, { rotation: 10, repeat: 7, yoyo: true, duration: 0.27, ease: 'sine.inOut' }, 0)
+        .to(bucket, { rotation: 8, repeat: 7, yoyo: true, duration: 0.27, ease: 'sine.inOut' }, 0);
+
+      // 2. Berhenti sejenak, ayunkan tangan & lempar air dari ember ke tengah layar (2.16s -> 2.66s)
+      tl.to([legFront, legBack, armBack, kidBody], { rotation: 0, y: 0, duration: 0.16, ease: 'power2.out' }, 2.16)
+        .to(kidShadow, { scaleX: 1, duration: 0.16 }, 2.16)
+        .to(kidBody, { rotation: -10, duration: 0.22, ease: 'power2.out' }, 2.22)
+        .to(armFront, { rotation: -52, duration: 0.22, ease: 'power2.out' }, 2.22)
+        .to(bucket, { rotation: -24, duration: 0.22, ease: 'power2.out' }, 2.22)
+        // Dorongan lemparan air ke depan!
+        .to(kidBody, { rotation: 12, duration: 0.2, ease: 'power3.in' }, 2.44)
+        .to(armFront, { rotation: 60, duration: 0.2, ease: 'power3.in' }, 2.44)
+        .to(bucket, { rotation: 52, duration: 0.2, ease: 'power3.in' }, 2.44);
+
+      // 3. Simulasi percikan partikel air (Liquid Splash) dari ember ke tengah layar
+      tl.call(() => {
+        if (!fluidCanvas || !bucket) return;
+        const bucketRect = bucket.getBoundingClientRect();
+        const stageRect = stage.getBoundingClientRect();
+        const origin = {
+          x: bucketRect.left + bucketRect.width * 0.7 - stageRect.left,
+          y: bucketRect.top + bucketRect.height * 0.35 - stageRect.top,
+        };
+        const target = {
+          x: stageRect.width * 0.5,
+          y: stageRect.height * 0.5,
+        };
+        cancelSplashRef.current?.();
+        cancelSplashRef.current = runLiquidSplash(fluidCanvas, origin, target);
+      }, undefined, 2.5);
+
+      // Aksen splash organik membesar di latar belakang
+      tl.to(splashCore, { scale: 1.15, opacity: 0.7, duration: 0.35, ease: 'back.out(1.7)' }, 2.86)
+        .to(splashCore, { scale: 1.55, opacity: 0.2, duration: 0.65, ease: 'power2.out' }, 3.18);
+
+      // 4. Kartu login muncul mulus dari cipratan air (3.02s -> 3.7s)
+      tl.to(loginLayer, { opacity: 1, scale: 1, y: 0, pointerEvents: 'auto', duration: 0.65, ease: 'back.out(1.25)' }, 3.02)
+        .to(staggerItems, { opacity: 1, y: 0, duration: 0.42, stagger: 0.055, ease: 'power3.out' }, 3.24);
+
+      // 5. Karakter santri tersenyum dan berjalan santai keluar ke arah kanan (3.25s -> selesai)
+      tl.to([kidBody, armFront, bucket], { rotation: 0, duration: 0.3, ease: 'power2.out' }, 2.95)
+        .set(legFront, { rotation: -16 }, 3.25)
+        .set(legBack, { rotation: 16 }, 3.25)
+        .set(bucket, { rotation: -5 }, 3.25)
+        .to(kidRoot, { x: exitDistance, duration: 7.6, ease: 'none' }, 3.25)
+        .to(kidBody, { y: -3, repeat: 18, yoyo: true, duration: 0.4, ease: 'sine.inOut' }, 3.25)
+        .to(kidShadow, { scaleX: 0.94, repeat: 18, yoyo: true, duration: 0.4, ease: 'sine.inOut' }, 3.25)
+        .to(legFront, { rotation: 16, repeat: 18, yoyo: true, duration: 0.4, ease: 'sine.inOut' }, 3.25)
+        .to(legBack, { rotation: -16, repeat: 18, yoyo: true, duration: 0.4, ease: 'sine.inOut' }, 3.25)
+        .to(bucket, { rotation: 6, repeat: 18, yoyo: true, duration: 0.4, ease: 'sine.inOut' }, 3.25)
+        .to(kidRoot, { opacity: 0, duration: 0.4, ease: 'power1.out' }, 10.45);
+    }, stage);
+
+    return () => {
+      cancelSplashRef.current?.();
+      cancelSplashRef.current = null;
+      ctx.revert();
+    };
+  }, [isLoggedIn]);
+
+  const handleSkipIntro = () => {
+    setIsIntroDone(true);
+    cancelSplashRef.current?.();
+    if (loginLayerRef.current) {
+      gsap.to(loginLayerRef.current, { opacity: 1, scale: 1, y: 0, pointerEvents: 'auto', duration: 0.2 });
+      const items = loginLayerRef.current.querySelectorAll('.gs-stagger');
+      gsap.to(items, { opacity: 1, y: 0, duration: 0.2 });
+    }
+  };
 
   // Objek Guru yang sedang dipilih saat login
   const selectedGuruObj = useMemo(() => {
@@ -370,61 +499,38 @@ export function UjianLisanGuruView({
   }, [santriInKelas, searchKeyword]);
 
   // =========================================================================
-  // 1. HALAMAN LOGIN GURU PENILAI (DESAIN KREATIF KUNING DENGAN MASKOT SANTRI EMBER)
+  // 1. HALAMAN LOGIN GURU PENILAI (ANIMASI SANTRI MEMBAWA EMBER & MELEMPAR AIR)
   // =========================================================================
   if (!isLoggedIn) {
     return (
-      <div
-        className="min-h-screen relative flex flex-col justify-center items-center p-4 sm:p-6 select-none font-sans overflow-x-hidden overflow-y-auto"
+      <main
+        ref={stageRef}
+        className="min-h-screen relative flex flex-col justify-center items-center p-4 sm:p-6 select-none font-sans overflow-hidden"
         style={{
           background:
             'radial-gradient(circle at 20% 20%, rgba(255, 252, 220, 0.5) 0%, transparent 45%), radial-gradient(circle at 80% 80%, rgba(234, 179, 8, 0.38) 0%, transparent 45%), linear-gradient(180deg, #F7CE15 0%, #F3BE00 100%)'
         }}
       >
-        {/* Ornamen Percikan Cat / Splash Organik di Balik Kartu (Sesuai Konsep Painter) */}
-        <svg
-          className="absolute w-[680px] max-w-[95vw] h-auto pointer-events-none opacity-45 sm:opacity-55 select-none -translate-y-2"
-          viewBox="0 0 800 600"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          aria-hidden="true"
-        >
-          <g transform="translate(400, 300)">
-            <path
-              d="M-120 -35 C-145 -85, -80 -135, -20 -110 C15 -155, 95 -135, 105 -75 C165 -65, 175 15, 120 45 C140 105, 70 150, 15 115 C-35 160, -115 130, -105 65 C-165 55, -170 -15, -120 -35 Z"
-              fill="url(#waterGradLogin)"
-            />
-            <circle cx="-135" cy="-95" r="13" fill="#fef08a" />
-            <circle cx="155" cy="-85" r="10" fill="#fde047" />
-            <circle cx="165" cy="70" r="15" fill="#fef08a" />
-            <circle cx="-145" cy="95" r="11" fill="#ffffff" opacity="0.75" />
-            <circle cx="25" cy="-155" r="8" fill="#ffffff" opacity="0.85" />
-            <circle cx="-35" cy="152" r="9" fill="#fde047" />
-          </g>
-          <defs>
-            <linearGradient id="waterGradLogin" x1="180" y1="200" x2="600" y2="420" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stopColor="#fef9c3" />
-              <stop offset="55%" stopColor="#fde047" />
-              <stop offset="100%" stopColor="#facc15" />
-            </linearGradient>
-          </defs>
-        </svg>
+        {/* Karakter Santri Beranimasi & Canvas Simulasi Percikan Air GSAP */}
+        <PainterKidScene ref={sceneRef} />
 
-        {/* CONTAINER KARTU UTAMA & MASKOT */}
-        <div className="relative w-full max-w-[420px] z-10 my-auto">
-          {/* MASKOT SANTRI BERPECI MEMBAWA EMBER (MENGIKUTI POSISI SUDUT KANAN BAWAH KARTU) */}
-          <div className="absolute -bottom-8 -right-8 sm:-bottom-10 sm:-right-12 z-30 pointer-events-none select-none transition-transform hover:scale-105 duration-300">
-            <img
-              src={santriEmberImg}
-              alt="Santri Berpeci Membawa Ember"
-              className="w-32 sm:w-40 md:w-44 h-auto drop-shadow-xl filter"
-            />
-          </div>
+        {/* Tombol Lewati Animasi (Bisa diklik jika ingin langsung buka form) */}
+        {!isIntroDone && (
+          <button
+            type="button"
+            onClick={handleSkipIntro}
+            className="absolute top-4 right-4 z-40 px-3.5 py-1.5 rounded-full bg-amber-400/40 hover:bg-amber-400/70 text-amber-950 font-bold text-xs backdrop-blur-xs transition cursor-pointer shadow-xs border border-amber-300/60"
+          >
+            Lewati Animasi →
+          </button>
+        )}
 
+        {/* CONTAINER KARTU UTAMA (MUNCUL MULUS KETIKA AIR DILEMPAR DARI EMBER) */}
+        <section ref={loginLayerRef} className="relative z-10 w-full max-w-[420px] my-auto">
           {/* KARTU LOGIN KUNING LEMBUT (BUTTERY CARD WITH GLASSER SHADOW) */}
-          <div className="relative z-10 w-full bg-[#FDF3A7]/95 sm:bg-[#FDECA6]/95 backdrop-blur-md rounded-3xl p-6 sm:p-8 shadow-2xl shadow-amber-950/20 border border-amber-300/80 space-y-5 animate-in fade-in zoom-in-95 duration-300 text-slate-800">
+          <div className="relative w-full bg-[#FDF3A7]/96 sm:bg-[#FDECA6]/96 backdrop-blur-md rounded-3xl p-6 sm:p-8 shadow-2xl shadow-amber-950/20 border border-amber-300/80 space-y-5 text-slate-800">
             {/* Header Brand & Logo */}
-            <div className="flex flex-col items-center text-center space-y-2.5">
+            <div className="flex flex-col items-center text-center space-y-2.5 gs-stagger">
               <div className="p-2 bg-white/80 rounded-2xl shadow-xs border border-amber-300/50">
                 <BaliBinaInsaniLogo customLogoUrl={pondok?.logoUrl} size={64} />
               </div>
@@ -444,12 +550,12 @@ export function UjianLisanGuruView({
             </div>
 
             {/* Garis Pemisah Halus */}
-            <div className="w-full h-px bg-gradient-to-r from-transparent via-amber-300/80 to-transparent" />
+            <div className="w-full h-px bg-gradient-to-r from-transparent via-amber-300/80 to-transparent gs-stagger" />
 
             {/* Form Pilihan Guru, Kelas, dan Kitab */}
             <form onSubmit={handleLoginSubmit} className="space-y-3.5 pt-0.5">
               {/* 1. Pilih Nama Guru */}
-              <div className="space-y-1.5 text-left">
+              <div className="space-y-1.5 text-left gs-stagger">
                 <label className="text-xs font-bold text-amber-950 flex items-center gap-1.5">
                   <User className="w-3.5 h-3.5 text-amber-700 shrink-0" />
                   <span>Nama Guru / Penguji :</span>
@@ -472,7 +578,7 @@ export function UjianLisanGuruView({
               </div>
 
               {/* 2. Pilih Kelas yang Diuji */}
-              <div className="space-y-1.5 text-left">
+              <div className="space-y-1.5 text-left gs-stagger">
                 <label className="text-xs font-bold text-amber-950 flex items-center justify-between">
                   <span className="flex items-center gap-1.5">
                     <Layers className="w-3.5 h-3.5 text-amber-700 shrink-0" />
@@ -499,7 +605,7 @@ export function UjianLisanGuruView({
               </div>
 
               {/* 3. Pilih Mata Pelajaran / Kitab */}
-              <div className="space-y-1.5 text-left">
+              <div className="space-y-1.5 text-left gs-stagger">
                 <label className="text-xs font-bold text-amber-950 flex items-center justify-between">
                   <span className="flex items-center gap-1.5">
                     <BookOpen className="w-3.5 h-3.5 text-amber-700 shrink-0" />
@@ -535,7 +641,7 @@ export function UjianLisanGuruView({
               {/* Tombol Masuk Utama (Gradien Emas Cerah) */}
               <button
                 type="submit"
-                className="w-full py-3.5 sm:py-4 rounded-xl bg-gradient-to-b from-[#ffd426] to-[#f5b800] hover:from-[#facc15] hover:to-[#eab308] active:scale-[0.99] text-slate-950 font-extrabold text-xs sm:text-sm shadow-md shadow-amber-600/20 border border-amber-400/80 transition flex items-center justify-center gap-2 cursor-pointer mt-4"
+                className="w-full py-3.5 sm:py-4 rounded-xl bg-gradient-to-b from-[#ffd426] to-[#f5b800] hover:from-[#facc15] hover:to-[#eab308] active:scale-[0.99] text-slate-950 font-extrabold text-xs sm:text-sm shadow-md shadow-amber-600/20 border border-amber-400/80 transition flex items-center justify-center gap-2 cursor-pointer mt-4 gs-stagger"
               >
                 <span>Buka Tabel Lembar Ujian</span>
                 <ArrowRight className="w-4 h-4 text-slate-950" />
@@ -544,7 +650,7 @@ export function UjianLisanGuruView({
 
             {/* Tombol Kembali ke Dashboard Admin jika dibuka dari Admin */}
             {onExitGuruMode && (
-              <div className="pt-1 text-center">
+              <div className="pt-1 text-center gs-stagger">
                 <button
                   type="button"
                   onClick={onExitGuruMode}
@@ -556,18 +662,18 @@ export function UjianLisanGuruView({
               </div>
             )}
           </div>
-        </div>
 
-        {/* Footer Keterangan Islami */}
-        <div className="relative z-10 text-center mt-5 space-y-0.5">
-          <p className="text-[11px] text-amber-950/80 font-bold">
-            Tahun Ajaran Aktif • Lembar Penilaian Standar Minimal Kelulusan (KKM) 2,7
-          </p>
-          <p className="text-[10px] text-amber-950/65 font-medium">
-            Akses langsung portal guru: <code className="bg-amber-400/40 px-1.5 py-0.5 rounded text-amber-950 font-mono font-bold">/guru</code>
-          </p>
-        </div>
-      </div>
+          {/* Footer Keterangan Islami */}
+          <div className="relative z-10 text-center mt-5 space-y-0.5 gs-stagger">
+            <p className="text-[11px] text-amber-950/80 font-bold">
+              Tahun Ajaran Aktif • Lembar Penilaian Standar Minimal Kelulusan (KKM) 2,7
+            </p>
+            <p className="text-[10px] text-amber-950/65 font-medium">
+              Akses langsung portal guru: <code className="bg-amber-400/40 px-1.5 py-0.5 rounded text-amber-950 font-mono font-bold">/guru</code>
+            </p>
+          </div>
+        </section>
+      </main>
     );
   }
 
