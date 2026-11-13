@@ -186,29 +186,13 @@ export const PainterKidScene = forwardRef<HTMLDivElement, PainterKidSceneProps>(
                 strokeLinejoin="round"
               />
 
-              {/* Rambut samping / belakang */}
+              {/* Rambut dengan jambul mengarah ke atas khas karakter */}
               <path
                 d="M78 96 C70 84, 70 62, 82 48 C79 44, 80 41, 86 43 C96 34, 122 33, 136 42 C142 39, 147 35, 148 31 C152 38, 148 52, 136 56 C122 60, 108 58, 102 68 C100 76, 98 86, 90 92 C86 95, 81 97, 78 96 Z"
                 fill="#232326"
                 stroke="#18181b"
                 strokeWidth="3.5"
                 strokeLinejoin="round"
-              />
-
-              {/* PECI HITAM SANTRI (SONGKOK NASIONAL) */}
-              <path
-                d="M73 54 L138 46 L144 76 L70 82 Z"
-                fill="#18181b"
-                stroke="#09090b"
-                strokeWidth="3.2"
-                strokeLinejoin="round"
-              />
-              {/* Puncak peci berlekuk khas songkok */}
-              <path
-                d="M73 54 Q105 48 138 46"
-                stroke="#27272a"
-                strokeWidth="2.5"
-                fill="none"
               />
 
               {/* Ear */}
@@ -323,3 +307,4 @@ export const PainterKidScene = forwardRef<HTMLDivElement, PainterKidSceneProps>(
 );
 
 PainterKidScene.displayName = 'PainterKidScene';
+

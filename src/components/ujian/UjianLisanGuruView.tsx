@@ -514,25 +514,14 @@ export function UjianLisanGuruView({
         {/* Karakter Santri Beranimasi & Canvas Simulasi Percikan Air GSAP */}
         <PainterKidScene ref={sceneRef} />
 
-        {/* Tombol Lewati Animasi (Bisa diklik jika ingin langsung buka form) */}
-        {!isIntroDone && (
-          <button
-            type="button"
-            onClick={handleSkipIntro}
-            className="absolute top-4 right-4 z-40 px-3.5 py-1.5 rounded-full bg-amber-400/40 hover:bg-amber-400/70 text-amber-950 font-bold text-xs backdrop-blur-xs transition cursor-pointer shadow-xs border border-amber-300/60"
-          >
-            Lewati Animasi →
-          </button>
-        )}
-
         {/* CONTAINER KARTU UTAMA (MUNCUL MULUS KETIKA AIR DILEMPAR DARI EMBER) */}
         <section ref={loginLayerRef} className="relative z-10 w-full max-w-[420px] my-auto">
           {/* KARTU LOGIN KUNING LEMBUT (BUTTERY CARD WITH GLASSER SHADOW) */}
           <div className="relative w-full bg-[#FDF3A7]/96 sm:bg-[#FDECA6]/96 backdrop-blur-md rounded-3xl p-6 sm:p-8 shadow-2xl shadow-amber-950/20 border border-amber-300/80 space-y-5 text-slate-800">
-            {/* Header Brand & Logo */}
+            {/* Header Brand & Logo Berbentuk Lingkaran Penuh */}
             <div className="flex flex-col items-center text-center space-y-2.5 gs-stagger">
-              <div className="p-2 bg-white/80 rounded-2xl shadow-xs border border-amber-300/50">
-                <BaliBinaInsaniLogo customLogoUrl={pondok?.logoUrl} size={64} />
+              <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-full bg-white shadow-sm border border-amber-300/60 flex items-center justify-center p-1.5 overflow-hidden">
+                <BaliBinaInsaniLogo customLogoUrl={pondok?.logoUrl} size={68} />
               </div>
 
               <div className="space-y-1">
@@ -647,30 +636,6 @@ export function UjianLisanGuruView({
                 <ArrowRight className="w-4 h-4 text-slate-950" />
               </button>
             </form>
-
-            {/* Tombol Kembali ke Dashboard Admin jika dibuka dari Admin */}
-            {onExitGuruMode && (
-              <div className="pt-1 text-center gs-stagger">
-                <button
-                  type="button"
-                  onClick={onExitGuruMode}
-                  className="text-xs text-amber-950/70 hover:text-amber-950 font-semibold hover:underline inline-flex items-center gap-1 transition cursor-pointer"
-                >
-                  <ArrowLeft className="w-3.5 h-3.5" />
-                  <span>Kembali ke Halaman Admin</span>
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Footer Keterangan Islami */}
-          <div className="relative z-10 text-center mt-5 space-y-0.5 gs-stagger">
-            <p className="text-[11px] text-amber-950/80 font-bold">
-              Tahun Ajaran Aktif • Lembar Penilaian Standar Minimal Kelulusan (KKM) 2,7
-            </p>
-            <p className="text-[10px] text-amber-950/65 font-medium">
-              Akses langsung portal guru: <code className="bg-amber-400/40 px-1.5 py-0.5 rounded text-amber-950 font-mono font-bold">/guru</code>
-            </p>
           </div>
         </section>
       </main>
