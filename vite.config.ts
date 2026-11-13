@@ -15,6 +15,7 @@ export default defineConfig({
         if (fs.existsSync(indexHtml)) {
           fs.mkdirSync(guruDir, { recursive: true });
           fs.copyFileSync(indexHtml, path.resolve(guruDir, 'index.html'));
+          fs.copyFileSync(indexHtml, path.resolve(distDir, 'guru.html'));
         }
       }
     }
