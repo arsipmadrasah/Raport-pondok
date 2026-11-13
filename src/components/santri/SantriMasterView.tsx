@@ -8,12 +8,9 @@ import {
   Plus,
   CheckSquare,
   Square,
-  Trash2,
-  Search,
-  Edit3
+  Trash2
 } from 'lucide-react';
 import { normalizeTingkat } from '../../constants/initialData';
-import { toRomanClass, getTingkatBadgeStyle, exportSantriAndGradesToCSV } from '../../utils/academicHelpers';
 import { SupabaseDB } from '../../services/supabase';
 import { KenaikanKelas6TingkatPanel } from '../dashboard/KenaikanKelas6TingkatPanel';
 import { ImportSantriExcelModal, downloadSantriExcelTemplate } from './ImportSantriExcelModal';
@@ -49,7 +46,6 @@ export function SantriMasterView({
 
   const [namaLengkap, setNamaLengkap] = useState('');
   const [nis, setNis] = useState('');
-  const [namaArab, setNamaArab] = useState('');
   const [kelasId, setKelasId] = useState(selectedKelasId || kelasList[0]?.id || 'kls-7a');
 
   const [checkedSantriIds, setCheckedSantriIds] = useState([]);
@@ -132,7 +128,6 @@ export function SantriMasterView({
     setSantriList((prev) => [...prev, newSantri]);
     setNamaLengkap('');
     setNis('');
-    setNamaArab('');
 
     try {
       await SupabaseDB.upsert('santri', {

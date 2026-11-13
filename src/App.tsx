@@ -121,8 +121,6 @@ const MAIN_NAV_ITEMS = [
   }
 ];
 
-const MENU_ITEMS = MAIN_NAV_ITEMS;
-
 const isPathGuru = () => {
   if (typeof window === 'undefined') return false;
   const path = window.location.pathname.toLowerCase();
@@ -978,12 +976,6 @@ export default function App() {
         });
       } catch (_) { }
     }
-  };
-
-  const handleSelectTahunAjaran = (taId) => {
-    setSelectedTahunAjaranId(taId);
-    const firstSem = semesterList.find((s) => s.tahunAjaranId === taId);
-    if (firstSem) setSelectedSemesterId(firstSem.id);
   };
 
   const activeMapels = useMemo(

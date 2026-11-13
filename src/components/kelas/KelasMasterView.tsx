@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { GraduationCap, Plus, Save, Edit3, Trash2, Printer } from 'lucide-react';
 import { normalizeTingkat, inferTingkatFromNama, TINGKAT_LABELS } from '../../constants/initialData';
-import { toRomanClass, getTingkatBadgeStyle } from '../../utils/academicHelpers';
 import { SupabaseDB } from '../../services/supabase';
 import { KenaikanKelas6TingkatPanel } from '../dashboard/KenaikanKelas6TingkatPanel';
 

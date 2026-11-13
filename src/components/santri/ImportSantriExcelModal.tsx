@@ -1,14 +1,11 @@
-import React, { useState, useId, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import {
   FileSpreadsheet,
   Download,
   Upload,
-  AlertCircle,
   CheckCircle2,
-  ArrowRight,
   X,
-  FileUp,
   Sparkles,
   Loader2,
   AlertTriangle

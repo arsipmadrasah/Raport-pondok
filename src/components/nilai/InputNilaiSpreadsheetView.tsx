@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Search, Save, CheckCircle2, FileSpreadsheet } from 'lucide-react';
-import { isMapelForKelas, resolvePredikat, toArabicNumerals } from '../../utils/academicHelpers';
+import { Search, Save } from 'lucide-react';
+import { isMapelForKelas, resolvePredikat } from '../../utils/academicHelpers';
 import { normalizeTingkat } from '../../constants/initialData';
 import { SupabaseDB } from '../../services/supabase';
 

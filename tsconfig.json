@@ -17,5 +17,5 @@
     "checkJs": false,
     "esModuleInterop": true
   },
-  "include": ["src", "aplikasi_rapor_pondok_pesantren.tsx"]
+  "include": ["src"]
 }

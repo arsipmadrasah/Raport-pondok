@@ -6,8 +6,7 @@ import {
   AlertTriangle,
   BookOpen,
   Edit3,
-  Printer,
-  ChevronRight
+  Printer
 } from 'lucide-react';
 import { normalizeTingkat } from '../../constants/initialData';
 import { toRomanClass, getTingkatBadgeStyle } from '../../utils/academicHelpers';

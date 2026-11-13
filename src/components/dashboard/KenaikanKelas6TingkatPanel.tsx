@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { GraduationCap, Save, Edit3, Download, Trash2, ArrowUpRight } from 'lucide-react';
 import { normalizeTingkat } from '../../constants/initialData';
-import { toRomanClass, getTingkatBadgeStyle, exportSantriAndGradesToCSV } from '../../utils/academicHelpers';
+import { exportSantriAndGradesToCSV } from '../../utils/academicHelpers';
 
 export function KenaikanKelas6TingkatPanel({
   kelasList,

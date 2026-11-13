@@ -1,7 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Loader2, Upload, Save, Database, Code2, Building2, Image } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Loader2, Upload, Save, Database, Code2 } from 'lucide-react';
 import { BaliBinaInsaniLogo } from '../common/BaliBinaInsaniLogo';
-import { SupabaseDB, compressLogoImageToBase64, SUPABASE_SQL_MIGRATION } from '../../services/supabase';
+import { compressLogoImageToBase64 } from '../../services/supabase';
 
 export function PengaturanPondokView({
   pondok,

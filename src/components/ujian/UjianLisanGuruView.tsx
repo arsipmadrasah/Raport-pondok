@@ -2,38 +2,22 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import {
   User,
-  Users,
   BookOpen,
   Layers,
-  CheckCircle2,
   AlertTriangle,
-  ArrowLeft,
   ArrowRight,
   Search,
   Check,
-  RefreshCw,
-  Award,
-  LogIn,
   LogOut,
   Save,
-  RotateCcw,
   Sparkles,
-  HelpCircle,
-  Clock,
   ChevronDown
 } from 'lucide-react';
-import santriEmberImg from '../../assets/santri_ember.png';
 import { PainterKidScene } from './PainterKidScene';
 import { runLiquidSplash } from '../../utils/liquidSplash';
 import { normalizeTingkat, GuruItem } from '../../constants/initialData';
 import { isMapelForKelas } from '../../utils/academicHelpers';
 import { BaliBinaInsaniLogo } from '../common/BaliBinaInsaniLogo';
-import {
-  BatikKawungPattern,
-  BatikGoldBorder,
-  HeaderIslamicPattern,
-  MihrabArchMotif
-} from '../layout/IslamicDecorations';
 
 export const DUMMY_USTADZ_LIST = [
   'Ust. Ahmad Zaki, S.Pd.I',
@@ -137,7 +121,6 @@ export function UjianLisanGuruView({
   );
 
   // Animasi GSAP Karakter Santri Melempar Ember & Munculnya Kartu Login
-  const [isIntroDone, setIsIntroDone] = useState(false);
   const stageRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<HTMLDivElement>(null);
   const loginLayerRef = useRef<HTMLDivElement>(null);
@@ -180,11 +163,7 @@ export function UjianLisanGuruView({
       gsap.set(kidBody, { svgOrigin: '108 190', rotation: 0, y: 0 });
       gsap.set(kidShadow, { svgOrigin: '110 252', scaleX: 1 });
 
-      const tl = gsap.timeline({
-        onComplete: () => {
-          setIsIntroDone(true);
-        },
-      });
+      const tl = gsap.timeline();
 
       // 1. Santri berjalan masuk dari kiri membawa ember (0s -> 2.16s, 8 langkah)
       tl.to(kidRoot, { x: 0, duration: 2.16, ease: 'none' }, 0)
@@ -251,22 +230,6 @@ export function UjianLisanGuruView({
       ctx.revert();
     };
   }, [isLoggedIn]);
-
-  const handleSkipIntro = () => {
-    setIsIntroDone(true);
-    cancelSplashRef.current?.();
-    if (loginLayerRef.current) {
-      gsap.to(loginLayerRef.current, { opacity: 1, scale: 1, y: 0, pointerEvents: 'auto', duration: 0.2 });
-      const items = loginLayerRef.current.querySelectorAll('.gs-stagger');
-      gsap.to(items, { opacity: 1, y: 0, duration: 0.2 });
-    }
-  };
-
-  // Objek Guru yang sedang dipilih saat login
-  const selectedGuruObj = useMemo(() => {
-    if (!guruList || guruList.length === 0 || !loginInputName) return null;
-    return guruList.find((g) => g.nama === loginInputName);
-  }, [guruList, loginInputName]);
 
   // Daftar Kitab / Mapel yang sah diajarkan pada kelas yang sedang dipilih (berdasarkan Pengaturan Kitab Admin)
   const mapelsInSelectedLoginClass = useMemo(() => {

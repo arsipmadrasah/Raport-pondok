@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Save, Edit3, Trash2, CheckCircle2, Calendar } from 'lucide-react';
+import { Plus, Save, Edit3, Trash2, CheckCircle2 } from 'lucide-react';
 import { SupabaseDB } from '../../services/supabase';
 import { toArabicNumerals } from '../../utils/academicHelpers';
 

@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import * as XLSX from 'xlsx';
-import { Search, Download, Printer, FileSpreadsheet } from 'lucide-react';
-import { isMapelForKelas, resolvePredikat, calculateClassAcademicReport, toArabicNumerals, exportSantriAndGradesToCSV } from '../../utils/academicHelpers';
+import { Search, Download, Printer } from 'lucide-react';
+import { isMapelForKelas, resolvePredikat } from '../../utils/academicHelpers';
 import { normalizeTingkat } from '../../constants/initialData';
 
 export function cleanMapelHeaderKey(namaMapel = '') {

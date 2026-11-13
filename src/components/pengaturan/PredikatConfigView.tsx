@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Edit3, Award } from 'lucide-react';
+import { Save, Edit3 } from 'lucide-react';
 import { SupabaseDB } from '../../services/supabase';
 import { INITIAL_PREDIKAT } from '../../constants/initialData';
 

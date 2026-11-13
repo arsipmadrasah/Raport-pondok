@@ -2,8 +2,7 @@
 export default {
   content: [
     "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
-    "./aplikasi_rapor_pondok_pesantren.tsx"
+    "./src/**/*.{js,ts,jsx,tsx}"
   ],
   theme: {
     extend: {

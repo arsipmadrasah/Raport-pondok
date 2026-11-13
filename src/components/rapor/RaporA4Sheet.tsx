@@ -1,6 +1,6 @@
 import React from 'react';
 import { BaliBinaInsaniLogo } from '../common/BaliBinaInsaniLogo';
-import { toArabicNumerals, resolvePredikat, isMapelForKelas } from '../../utils/academicHelpers';
+import { isMapelForKelas } from '../../utils/academicHelpers';
 
 export function RaporA4Sheet({
   pondok,
@@ -13,7 +13,7 @@ export function RaporA4Sheet({
   activeMapels,
   showRankOnRapor
 }) {
-  const { santri, mapelScores, isComplete, totalNilai, rataRata, peringkat } = evaluation;
+  const { santri, mapelScores, totalNilai, rataRata, peringkat } = evaluation;
   const santriKelas = (kelasList && kelasList.find((k) => k.id === santri.kelasId)) || kelas;
 
   const groupedMapels = kelompokMapelList

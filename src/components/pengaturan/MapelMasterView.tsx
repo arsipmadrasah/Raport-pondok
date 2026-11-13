@@ -9,12 +9,9 @@ import {
   CheckCircle2,
   Edit3,
   Trash2,
-  Search,
-  Check,
   X
 } from 'lucide-react';
-import { normalizeTingkat } from '../../constants/initialData';
-import { isMapelForKelas, toRomanClass, getTingkatBadgeStyle } from '../../utils/academicHelpers';
+import { isMapelForKelas } from '../../utils/academicHelpers';
 import { SupabaseDB } from '../../services/supabase';
 
 const PONDOK_KITAB_DIRECTORY = [

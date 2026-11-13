@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Loader2,
   Printer,
@@ -8,7 +8,7 @@ import {
   Info,
   GraduationCap
 } from 'lucide-react';
-import { calculateClassAcademicReport, toArabicNumerals, isMapelForKelas } from '../../utils/academicHelpers';
+import { calculateClassAcademicReport, isMapelForKelas } from '../../utils/academicHelpers';
 import { normalizeTingkat } from '../../constants/initialData';
 import { RaporA4Sheet } from './RaporA4Sheet';
 
