@@ -178,7 +178,7 @@ export default function App() {
             };
           });
         }
-      } catch (_) {}
+      } catch (_) { }
     }
     return INITIAL_GURU;
   });
@@ -642,7 +642,7 @@ export default function App() {
             status_aktif: g.statusAktif ?? true
           }))
         );
-      } catch (_) {}
+      } catch (_) { }
 
       if (!silent) {
         showToast('Data awal 6 Tingkat Kelas berhasil di-seed ke Supabase PostgreSQL!');
@@ -912,7 +912,7 @@ export default function App() {
           setGuruList(loadedGuru);
           try {
             localStorage.setItem('rapor_guru_list', JSON.stringify(loadedGuru));
-          } catch (_) {}
+          } catch (_) { }
         } else if (guruRows && guruRows.length === 0 && guruList.length > 0) {
           // Tabel guru baru dibuat dan masih kosong: otomatis simpan data guru saat ini ke Supabase
           const payload = guruList.map((g) => ({
@@ -1105,7 +1105,7 @@ export default function App() {
             'santri_id,semester_id,mapel_id'
           );
         }
-      } catch (_) {}
+      } catch (_) { }
     }
   };
 
@@ -1323,8 +1323,8 @@ export default function App() {
                     }
                   }}
                   className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-left text-xs transition-all ${isParentActive
-                      ? 'bg-[#E6F4EA] text-[#064E3B] font-bold shadow-xs'
-                      : 'text-white/90 hover:bg-emerald-900/50 hover:text-white font-medium'
+                    ? 'bg-[#E6F4EA] text-[#064E3B] font-bold shadow-xs'
+                    : 'text-white/90 hover:bg-emerald-900/50 hover:text-white font-medium'
                     }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
@@ -1355,8 +1355,8 @@ export default function App() {
                           type="button"
                           onClick={() => handleNavigate(item.id, sub.id)}
                           className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-all text-left ${isSubActive
-                              ? 'bg-emerald-800 text-white font-bold shadow-xs'
-                              : 'text-emerald-200/80 hover:text-white hover:bg-emerald-900/40 font-medium'
+                            ? 'bg-emerald-800 text-white font-bold shadow-xs'
+                            : 'text-emerald-200/80 hover:text-white hover:bg-emerald-900/40 font-medium'
                             }`}
                         >
                           <SubIcon
@@ -1474,8 +1474,8 @@ export default function App() {
                           key={t.id}
                           onClick={() => setSelectedTahunAjaranId(t.id)}
                           className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-left transition ${selectedTahunAjaranId === t.id
-                              ? 'bg-emerald-50 text-emerald-900 font-bold border border-emerald-200'
-                              : 'hover:bg-slate-50 text-slate-700'
+                            ? 'bg-emerald-50 text-emerald-900 font-bold border border-emerald-200'
+                            : 'hover:bg-slate-50 text-slate-700'
                             }`}
                         >
                           <span>{t.nama}</span>
@@ -1502,8 +1502,8 @@ export default function App() {
                               setShowYearPicker(false);
                             }}
                             className={`px-3 py-2 rounded-lg text-center transition font-semibold ${selectedSemesterId === s.id
-                                ? 'bg-emerald-700 text-white shadow-xs'
-                                : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                              ? 'bg-emerald-700 text-white shadow-xs'
+                              : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
                               }`}
                           >
                             Semester {s.nama}
@@ -1706,8 +1706,8 @@ export default function App() {
                         type="button"
                         onClick={() => handleNavigate('nilai-rapor', tab.id)}
                         className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${isActive
-                            ? 'bg-[#064E3B] text-white shadow-xs'
-                            : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                          ? 'bg-[#064E3B] text-white shadow-xs'
+                          : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                           }`}
                       >
                         <Icon className="w-4 h-4" />
@@ -1798,8 +1798,8 @@ export default function App() {
                         type="button"
                         onClick={() => handleNavigate('pengaturan', tab.id)}
                         className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${isActive
-                            ? 'bg-[#064E3B] text-white shadow-xs'
-                            : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                          ? 'bg-[#064E3B] text-white shadow-xs'
+                          : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                           }`}
                       >
                         <Icon className="w-4 h-4" />
@@ -1880,8 +1880,8 @@ export default function App() {
                 type="button"
                 onClick={() => handleNavigate(tab.id)}
                 className={`flex flex-col items-center justify-center py-1 rounded-xl transition ${isTabActive
-                    ? 'text-[#064E3B] font-bold'
-                    : 'text-slate-500 hover:text-slate-800 font-medium'
+                  ? 'text-[#064E3B] font-bold'
+                  : 'text-slate-500 hover:text-slate-800 font-medium'
                   }`}
               >
                 <div

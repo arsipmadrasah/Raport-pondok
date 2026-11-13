@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   ArrowLeft,
+  ArrowRight,
   Search,
   Check,
   RefreshCw,
@@ -17,8 +18,10 @@ import {
   RotateCcw,
   Sparkles,
   HelpCircle,
-  Clock
+  Clock,
+  ChevronDown
 } from 'lucide-react';
+import santriEmberImg from '../../assets/santri_ember.png';
 import { normalizeTingkat, GuruItem } from '../../constants/initialData';
 import { isMapelForKelas } from '../../utils/academicHelpers';
 import { BaliBinaInsaniLogo } from '../common/BaliBinaInsaniLogo';
@@ -367,136 +370,201 @@ export function UjianLisanGuruView({
   }, [santriInKelas, searchKeyword]);
 
   // =========================================================================
-  // 1. HALAMAN LOGIN GURU PENILAI (DENGAN LOGO RESMI, ELEMEN BATIK & ISLAMI)
+  // 1. HALAMAN LOGIN GURU PENILAI (DESAIN KREATIF KUNING DENGAN MASKOT SANTRI EMBER)
   // =========================================================================
   if (!isLoggedIn) {
     return (
-      <div className="min-h-screen relative bg-gradient-to-br from-[#043324] via-[#064E3B] to-[#022218] flex flex-col justify-center items-center p-4 select-none font-sans overflow-hidden">
-        {/* Ornamen Motif Batik Kawung Nusantara di Latar Belakang */}
-        <BatikKawungPattern opacity={0.12} />
+      <div
+        className="min-h-screen relative flex flex-col justify-center items-center p-4 sm:p-6 select-none font-sans overflow-x-hidden overflow-y-auto"
+        style={{
+          background:
+            'radial-gradient(circle at 20% 20%, rgba(255, 252, 220, 0.5) 0%, transparent 45%), radial-gradient(circle at 80% 80%, rgba(234, 179, 8, 0.38) 0%, transparent 45%), linear-gradient(180deg, #F7CE15 0%, #F3BE00 100%)'
+        }}
+      >
+        {/* Ornamen Percikan Cat / Splash Organik di Balik Kartu (Sesuai Konsep Painter) */}
+        <svg
+          className="absolute w-[680px] max-w-[95vw] h-auto pointer-events-none opacity-45 sm:opacity-55 select-none -translate-y-2"
+          viewBox="0 0 800 600"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          aria-hidden="true"
+        >
+          <g transform="translate(400, 300)">
+            <path
+              d="M-120 -35 C-145 -85, -80 -135, -20 -110 C15 -155, 95 -135, 105 -75 C165 -65, 175 15, 120 45 C140 105, 70 150, 15 115 C-35 160, -115 130, -105 65 C-165 55, -170 -15, -120 -35 Z"
+              fill="url(#waterGradLogin)"
+            />
+            <circle cx="-135" cy="-95" r="13" fill="#fef08a" />
+            <circle cx="155" cy="-85" r="10" fill="#fde047" />
+            <circle cx="165" cy="70" r="15" fill="#fef08a" />
+            <circle cx="-145" cy="95" r="11" fill="#ffffff" opacity="0.75" />
+            <circle cx="25" cy="-155" r="8" fill="#ffffff" opacity="0.85" />
+            <circle cx="-35" cy="152" r="9" fill="#fde047" />
+          </g>
+          <defs>
+            <linearGradient id="waterGradLogin" x1="180" y1="200" x2="600" y2="420" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stopColor="#fef9c3" />
+              <stop offset="55%" stopColor="#fde047" />
+              <stop offset="100%" stopColor="#facc15" />
+            </linearGradient>
+          </defs>
+        </svg>
 
-        {/* Ornamen Lengkungan Mihrab di Sudut Atas */}
-        <div className="absolute top-0 right-0 w-80 h-80 opacity-15 pointer-events-none text-emerald-300">
-          <MihrabArchMotif />
-        </div>
-        <div className="absolute bottom-0 left-0 w-80 h-80 opacity-15 pointer-events-none text-emerald-300 rotate-180">
-          <MihrabArchMotif />
-        </div>
-
-        {/* KARTU LOGIN DENGAN BINGKAI ISLAMI & AKSEN EMAS */}
-        <div className="relative z-10 w-full max-w-md bg-white rounded-3xl shadow-2xl border-2 border-amber-400/30 p-6 sm:p-8 space-y-5 animate-in fade-in zoom-in-95 duration-200 backdrop-blur-xs">
-          {/* Logo Resmi Pondok Pesantren Bali Bina Insani (Tanpa Bingkai) */}
-          <div className="flex flex-col items-center text-center space-y-2">
-            <BaliBinaInsaniLogo customLogoUrl={pondok?.logoUrl} size={88} />
-
-            <div className="space-y-0.5">
-              <h1 className="text-base sm:text-lg font-black text-slate-900 leading-tight">
-                {pondok?.namaPondokLatin || 'Pondok Pesantren Bali Bina Insani'}
-              </h1>
-              <p className="text-xs text-emerald-800 font-semibold">
-                Sistem Penilaian Ujian Lisan (Syafahi)
-              </p>
-            </div>
+        {/* CONTAINER KARTU UTAMA & MASKOT */}
+        <div className="relative w-full max-w-[420px] z-10 my-auto">
+          {/* MASKOT SANTRI BERPECI MEMBAWA EMBER (MENGIKUTI POSISI SUDUT KANAN BAWAH KARTU) */}
+          <div className="absolute -bottom-8 -right-8 sm:-bottom-10 sm:-right-12 z-30 pointer-events-none select-none transition-transform hover:scale-105 duration-300">
+            <img
+              src={santriEmberImg}
+              alt="Santri Berpeci Membawa Ember"
+              className="w-32 sm:w-40 md:w-44 h-auto drop-shadow-xl filter"
+            />
           </div>
 
-          {/* Pita Pembatas Batik Emas */}
-          <BatikGoldBorder />
+          {/* KARTU LOGIN KUNING LEMBUT (BUTTERY CARD WITH GLASSER SHADOW) */}
+          <div className="relative z-10 w-full bg-[#FDF3A7]/95 sm:bg-[#FDECA6]/95 backdrop-blur-md rounded-3xl p-6 sm:p-8 shadow-2xl shadow-amber-950/20 border border-amber-300/80 space-y-5 animate-in fade-in zoom-in-95 duration-300 text-slate-800">
+            {/* Header Brand & Logo */}
+            <div className="flex flex-col items-center text-center space-y-2.5">
+              <div className="p-2 bg-white/80 rounded-2xl shadow-xs border border-amber-300/50">
+                <BaliBinaInsaniLogo customLogoUrl={pondok?.logoUrl} size={64} />
+              </div>
 
-          {/* Form Login Guru & Mapel */}
-          <form onSubmit={handleLoginSubmit} className="space-y-4 pt-1">
-            {/* 1. Pilih Nama Guru */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                <User className="w-4 h-4 text-emerald-700" />
-                <span>Pilih Nama Guru / Penguji :</span>
-              </label>
-              <select
-                value={loginInputName}
-                onChange={(e) => setLoginInputName(e.target.value)}
-                className="w-full px-3.5 py-3 rounded-xl bg-slate-50 border border-slate-300 text-xs sm:text-sm font-semibold text-slate-900 cursor-pointer focus:ring-2 focus:ring-emerald-600 focus:outline-none"
-              >
-                <option value="">-- Pilih Nama Guru --</option>
-                {teacherListFromAdmin.map((guru) => (
-                  <option key={guru} value={guru}>
-                    {guru}
-                  </option>
-                ))}
-              </select>
+              <div className="space-y-1">
+                <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-amber-400/35 text-amber-950 text-[10px] font-extrabold tracking-wider uppercase">
+                  <Sparkles className="w-3 h-3 text-amber-700" />
+                  Portal Ujian Syafahi
+                </span>
+                <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight leading-tight">
+                  Ahlan wa Sahlan
+                </h1>
+                <p className="text-xs text-amber-950/75 font-semibold">
+                  {pondok?.namaPondokLatin || 'Pondok Pesantren Bali Bina Insani'}
+                </p>
+              </div>
             </div>
 
-            {/* 2. Pilih Kelas yang Diuji */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-800 flex items-center justify-between">
-                <span className="flex items-center gap-1.5">
-                  <Layers className="w-4 h-4 text-emerald-700" />
-                  <span>Pilih Kelas yang Diuji :</span>
-                </span>
-                <span className="text-[10px] text-slate-500 font-semibold">
-                  {activeKelasList.length} Kelas Aktif
-                </span>
-              </label>
-              <select
-                value={loginSelectedKelasId}
-                onChange={(e) => setLoginSelectedKelasId(e.target.value)}
-                className="w-full px-3.5 py-3 rounded-xl bg-slate-50 border border-slate-300 text-xs sm:text-sm font-semibold text-slate-900 cursor-pointer focus:ring-2 focus:ring-emerald-600 focus:outline-none"
-              >
-                {activeKelasList.map((k) => (
-                  <option key={k.id} value={k.id}>
-                    Kelas {k.namaKelas} (Tingkat {normalizeTingkat(k.tingkat, k.namaKelas)})
-                  </option>
-                ))}
-              </select>
-            </div>
+            {/* Garis Pemisah Halus */}
+            <div className="w-full h-px bg-gradient-to-r from-transparent via-amber-300/80 to-transparent" />
 
-            {/* 3. Pilih Mata Pelajaran / Kitab (Otomatis Sesuai Kitab yang Diajarkan di Kelas Terpilih) */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-800 flex items-center justify-between">
-                <span className="flex items-center gap-1.5">
-                  <BookOpen className="w-4 h-4 text-emerald-700" />
-                  <span>Pilih Mata Pelajaran / Kitab :</span>
-                </span>
-                {mapelsInSelectedLoginClass.length > 0 && (
-                  <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                    ✓ {mapelsInSelectedLoginClass.length} Kitab di Kelas Ini
+            {/* Form Pilihan Guru, Kelas, dan Kitab */}
+            <form onSubmit={handleLoginSubmit} className="space-y-3.5 pt-0.5">
+              {/* 1. Pilih Nama Guru */}
+              <div className="space-y-1.5 text-left">
+                <label className="text-xs font-bold text-amber-950 flex items-center gap-1.5">
+                  <User className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                  <span>Nama Guru / Penguji :</span>
+                </label>
+                <div className="relative">
+                  <select
+                    value={loginInputName}
+                    onChange={(e) => setLoginInputName(e.target.value)}
+                    className="w-full px-4 py-3 pr-10 rounded-xl bg-white border border-amber-200/90 text-xs sm:text-sm font-semibold text-slate-900 cursor-pointer shadow-xs focus:ring-3 focus:ring-amber-500/25 focus:border-amber-500 focus:outline-none transition appearance-none"
+                  >
+                    <option value="">-- Pilih Nama Guru --</option>
+                    {teacherListFromAdmin.map((guru) => (
+                      <option key={guru} value={guru}>
+                        {guru}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-amber-700 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none opacity-70" />
+                </div>
+              </div>
+
+              {/* 2. Pilih Kelas yang Diuji */}
+              <div className="space-y-1.5 text-left">
+                <label className="text-xs font-bold text-amber-950 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <Layers className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                    <span>Pilih Kelas yang Diuji :</span>
                   </span>
-                )}
-              </label>
-              <select
-                value={loginSelectedMapelId}
-                onChange={(e) => setLoginSelectedMapelId(e.target.value)}
-                disabled={mapelsInSelectedLoginClass.length === 0}
-                className="w-full px-3.5 py-3 rounded-xl bg-slate-50 border border-slate-300 text-xs sm:text-sm font-semibold text-slate-900 cursor-pointer focus:ring-2 focus:ring-emerald-600 focus:outline-none disabled:opacity-50"
-              >
-                {mapelsInSelectedLoginClass.length === 0 ? (
-                  <option value="">(Belum ada kitab yang diatur untuk kelas ini)</option>
-                ) : (
-                  mapelsInSelectedLoginClass.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.namaLatin} {m.namaArab ? `(${m.namaArab})` : ''}
-                    </option>
-                  ))
-                )}
-              </select>
-            </div>
+                  <span className="text-[10px] text-amber-800 font-bold">
+                    {activeKelasList.length} Rombel Aktif
+                  </span>
+                </label>
+                <div className="relative">
+                  <select
+                    value={loginSelectedKelasId}
+                    onChange={(e) => setLoginSelectedKelasId(e.target.value)}
+                    className="w-full px-4 py-3 pr-10 rounded-xl bg-white border border-amber-200/90 text-xs sm:text-sm font-semibold text-slate-900 cursor-pointer shadow-xs focus:ring-3 focus:ring-amber-500/25 focus:border-amber-500 focus:outline-none transition appearance-none"
+                  >
+                    {activeKelasList.map((k) => (
+                      <option key={k.id} value={k.id}>
+                        Kelas {k.namaKelas} (Tingkat {normalizeTingkat(k.tingkat, k.namaKelas)})
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-amber-700 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none opacity-70" />
+                </div>
+              </div>
 
-            {/* Tombol Masuk */}
-            <button
-              type="submit"
-              className="w-full py-3.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 active:scale-[0.99] text-white font-bold text-xs sm:text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer border border-emerald-600 mt-2"
-            >
-              <LogIn className="w-4 h-4 text-amber-300" />
-              <span>Buka Tabel Lembar Ujian</span>
-            </button>
-          </form>
+              {/* 3. Pilih Mata Pelajaran / Kitab */}
+              <div className="space-y-1.5 text-left">
+                <label className="text-xs font-bold text-amber-950 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <BookOpen className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                    <span>Pilih Mata Pelajaran / Kitab :</span>
+                  </span>
+                  {mapelsInSelectedLoginClass.length > 0 && (
+                    <span className="text-[10px] text-amber-900 font-extrabold bg-amber-200/70 px-2 py-0.5 rounded border border-amber-300">
+                      ✓ {mapelsInSelectedLoginClass.length} Kitab
+                    </span>
+                  )}
+                </label>
+                <div className="relative">
+                  <select
+                    value={loginSelectedMapelId}
+                    onChange={(e) => setLoginSelectedMapelId(e.target.value)}
+                    disabled={mapelsInSelectedLoginClass.length === 0}
+                    className="w-full px-4 py-3 pr-10 rounded-xl bg-white border border-amber-200/90 text-xs sm:text-sm font-semibold text-slate-900 cursor-pointer shadow-xs focus:ring-3 focus:ring-amber-500/25 focus:border-amber-500 focus:outline-none transition disabled:opacity-50 appearance-none"
+                  >
+                    {mapelsInSelectedLoginClass.length === 0 ? (
+                      <option value="">(Belum ada kitab yang diatur)</option>
+                    ) : (
+                      mapelsInSelectedLoginClass.map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.namaLatin} {m.namaArab ? `(${m.namaArab})` : ''}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-amber-700 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none opacity-70" />
+                </div>
+              </div>
+
+              {/* Tombol Masuk Utama (Gradien Emas Cerah) */}
+              <button
+                type="submit"
+                className="w-full py-3.5 sm:py-4 rounded-xl bg-gradient-to-b from-[#ffd426] to-[#f5b800] hover:from-[#facc15] hover:to-[#eab308] active:scale-[0.99] text-slate-950 font-extrabold text-xs sm:text-sm shadow-md shadow-amber-600/20 border border-amber-400/80 transition flex items-center justify-center gap-2 cursor-pointer mt-4"
+              >
+                <span>Buka Tabel Lembar Ujian</span>
+                <ArrowRight className="w-4 h-4 text-slate-950" />
+              </button>
+            </form>
+
+            {/* Tombol Kembali ke Dashboard Admin jika dibuka dari Admin */}
+            {onExitGuruMode && (
+              <div className="pt-1 text-center">
+                <button
+                  type="button"
+                  onClick={onExitGuruMode}
+                  className="text-xs text-amber-950/70 hover:text-amber-950 font-semibold hover:underline inline-flex items-center gap-1 transition cursor-pointer"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Kembali ke Halaman Admin</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Footer Keterangan Islami */}
-        <div className="relative z-10 text-center mt-5 space-y-1">
-          <p className="text-[11px] text-emerald-200/80 font-medium">
-            Tahun Ajaran Aktif • Lembar Penilaian Standar Minimal Kelulusan 2,7
+        <div className="relative z-10 text-center mt-5 space-y-0.5">
+          <p className="text-[11px] text-amber-950/80 font-bold">
+            Tahun Ajaran Aktif • Lembar Penilaian Standar Minimal Kelulusan (KKM) 2,7
           </p>
-          <p className="text-[10px] text-emerald-300/60">
-            Akses langsung portal guru: <code className="bg-emerald-950/60 px-1.5 py-0.5 rounded text-amber-300 font-mono">/guru</code>
+          <p className="text-[10px] text-amber-950/65 font-medium">
+            Akses langsung portal guru: <code className="bg-amber-400/40 px-1.5 py-0.5 rounded text-amber-950 font-mono font-bold">/guru</code>
           </p>
         </div>
       </div>
