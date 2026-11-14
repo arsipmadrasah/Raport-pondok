@@ -1,6 +1,5 @@
 import React, { useMemo } from 'react';
 import {
-  FileCheck2,
   AlertTriangle,
   BookOpen,
   Edit3,
@@ -74,9 +73,11 @@ export function DashboardView({
 
         {/* Card 3: Rapor Lengkap */}
         <div className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-xs flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-purple-100 flex items-center justify-center shrink-0 text-purple-600">
-            <FileCheck2 className="w-6 h-6" />
-          </div>
+          <img
+            src="/icons/icon-rapor-lengkap.png"
+            alt="Rapor Lengkap"
+            className="w-12 h-12 object-contain shrink-0 rounded-2xl shadow-2xs"
+          />
           <div className="min-w-0 flex-1">
             <p className="text-xs font-semibold text-slate-500">Rapor Lengkap</p>
             <h4 className="text-2xl sm:text-3xl font-extrabold text-slate-900 leading-tight">
