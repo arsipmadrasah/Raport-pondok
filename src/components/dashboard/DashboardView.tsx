@@ -1,7 +1,5 @@
 import React, { useMemo } from 'react';
 import {
-  Users,
-  Layers,
   FileCheck2,
   AlertTriangle,
   BookOpen,
@@ -40,9 +38,11 @@ export function DashboardView({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Card 1: Total Santri */}
         <div className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-xs flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-100 flex items-center justify-center shrink-0 text-emerald-700">
-            <Users className="w-6 h-6" />
-          </div>
+          <img
+            src="/icons/icon-total-santri.png"
+            alt="Total Santri"
+            className="w-12 h-12 object-contain shrink-0 rounded-2xl shadow-2xs"
+          />
           <div className="min-w-0 flex-1">
             <p className="text-xs font-semibold text-slate-500">Total Santri</p>
             <h4 className="text-2xl sm:text-3xl font-extrabold text-slate-900 leading-tight">
@@ -56,9 +56,11 @@ export function DashboardView({
 
         {/* Card 2: Total Kelas */}
         <div className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-xs flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-sky-100 flex items-center justify-center shrink-0 text-sky-600">
-            <Layers className="w-6 h-6" />
-          </div>
+          <img
+            src="/icons/icon-total-kelas.png"
+            alt="Total Kelas"
+            className="w-12 h-12 object-contain shrink-0 rounded-2xl shadow-2xs"
+          />
           <div className="min-w-0 flex-1">
             <p className="text-xs font-semibold text-slate-500">Total Kelas</p>
             <h4 className="text-2xl sm:text-3xl font-extrabold text-slate-900 leading-tight">
