@@ -152,15 +152,24 @@ export default function App() {
   const [kelasList, setKelasList] = useState(INITIAL_KELAS);
   const [kelompokMapelList, setKelompokMapelList] = useState(INITIAL_KELOMPOK_MAPEL);
   const [mapelList, setMapelList] = useState(() => {
-    let savedKitabKelasMap = {};
+    let savedKitabKelasMap: Record<string, string[]> = {};
+    let savedMasukRaporMap: Record<string, boolean> = {};
     if (typeof window !== 'undefined') {
       try {
         const raw = localStorage.getItem('rapor_kitab_kelas_map');
         if (raw) savedKitabKelasMap = JSON.parse(raw);
       } catch (_) { }
+      try {
+        const raw = localStorage.getItem('rapor_kitab_masuk_rapor_map');
+        if (raw) savedMasukRaporMap = JSON.parse(raw);
+      } catch (_) { }
     }
     return INITIAL_MAPEL.map((m) => ({
       ...m,
+      masukRapor:
+        savedMasukRaporMap[m.id] !== undefined
+          ? savedMasukRaporMap[m.id]
+          : ((m as any).masukRapor ?? true),
       targetKelasIds: savedKitabKelasMap[m.id] || m.targetKelasIds || ['ALL']
     }));
   });
@@ -812,38 +821,94 @@ export default function App() {
           }).catch(() => { });
         }
 
+        // Pastikan kelompok default dari INITIAL_KELOMPOK_MAPEL (seperti Pelajaran Umum) terdaftar
+        const existingKelompokIds = new Set(loadedKelompoks.map((k) => k.id));
+        const missingKelompoks = INITIAL_KELOMPOK_MAPEL.filter((ik) => !existingKelompokIds.has(ik.id));
+        if (missingKelompoks.length > 0) {
+          loadedKelompoks.push(...missingKelompoks);
+          SupabaseDB.upsert(
+            'kelompok_mapel',
+            missingKelompoks.map((k) => ({
+              id: k.id,
+              kode: k.kode,
+              nama_kelompok: k.namaKelompok,
+              nama_arab: k.namaArab,
+              urutan: k.urutan
+            }))
+          ).catch(() => { });
+        }
+
         setKelompokMapelList(
           loadedKelompoks.sort((a, b) => (a.urutan || 1) - (b.urutan || 1))
         );
       }
 
       if (mapelRows.length > 0) {
-        let savedKitabKelasMap = {};
+        let savedKitabKelasMap: Record<string, string[]> = {};
+        let savedMasukRaporMap: Record<string, boolean> = {};
         try {
           const raw = localStorage.getItem('rapor_kitab_kelas_map');
           if (raw) savedKitabKelasMap = JSON.parse(raw);
         } catch (_) { }
+        try {
+          const raw = localStorage.getItem('rapor_kitab_masuk_rapor_map');
+          if (raw) savedMasukRaporMap = JSON.parse(raw);
+        } catch (_) { }
 
-        setMapelList(
-          mapelRows.map((m) => {
-            const initialMatch = INITIAL_MAPEL.find((im) => im.id === m.id);
-            const targetKelasIds =
-              savedKitabKelasMap[m.id] ||
-              initialMatch?.targetKelasIds ||
-              ['ALL'];
-            return {
+        const existingMapelIds = new Set(mapelRows.map((m: any) => m.id));
+        const missingInitialMapels = INITIAL_MAPEL.filter((im) => !existingMapelIds.has(im.id));
+
+        const parsedLoadedMapels = mapelRows.map((m: any) => {
+          const initialMatch = INITIAL_MAPEL.find((im) => im.id === m.id);
+          const targetKelasIds =
+            savedKitabKelasMap[m.id] ||
+            initialMatch?.targetKelasIds ||
+            ['ALL'];
+          const masukRapor =
+            savedMasukRaporMap[m.id] !== undefined
+              ? savedMasukRaporMap[m.id]
+              : (initialMatch ? ((initialMatch as any).masukRapor ?? true) : true);
+          return {
+            id: m.id,
+            kodeMapel: m.kode_mapel,
+            namaLatin: m.nama_latin,
+            namaArab: m.nama_arab,
+            kelompokId: m.kelompok_id,
+            urutanTampil: Number(m.urutan_tampil || 1),
+            statusAktif: Boolean(m.status_aktif),
+            statusWajib: Boolean(m.status_wajib),
+            masukRapor,
+            targetKelasIds
+          };
+        });
+
+        const missingParsed = missingInitialMapels.map((im) => ({
+          ...im,
+          masukRapor:
+            savedMasukRaporMap[im.id] !== undefined
+              ? savedMasukRaporMap[im.id]
+              : ((im as any).masukRapor ?? true),
+          targetKelasIds: savedKitabKelasMap[im.id] || im.targetKelasIds || ['ALL']
+        }));
+
+        const combinedMapels = [...parsedLoadedMapels, ...missingParsed];
+        setMapelList(combinedMapels.sort((a, b) => a.urutanTampil - b.urutanTampil));
+
+        if (missingInitialMapels.length > 0) {
+          SupabaseDB.upsert(
+            'mata_pelajaran',
+            missingInitialMapels.map((m) => ({
               id: m.id,
-              kodeMapel: m.kode_mapel,
-              namaLatin: m.nama_latin,
-              namaArab: m.nama_arab,
-              kelompokId: m.kelompok_id,
-              urutanTampil: Number(m.urutan_tampil || 1),
-              statusAktif: Boolean(m.status_aktif),
-              statusWajib: Boolean(m.status_wajib),
-              targetKelasIds
-            };
-          })
-        );
+              kode_mapel: m.kodeMapel,
+              nama_latin: m.namaLatin,
+              nama_arab: m.namaArab,
+              kelompok_id: m.kelompokId,
+              urutan_tampil: m.urutanTampil,
+              status_aktif: m.statusAktif,
+              status_wajib: m.statusWajib
+            }))
+          ).catch(() => { });
+        }
       }
 
       if (predikatRows.length > 0) {
@@ -1006,7 +1071,9 @@ export default function App() {
       )
       .map((kls) => {
         const santriInKls = activeSantri.filter((s) => s.kelasId === kls.id);
-        const mapelsForThisKls = activeMapels.filter((m) => isMapelForKelas(m, kls.id));
+        const mapelsForThisKls = activeMapels.filter(
+          (m) => isMapelForKelas(m, kls.id) && (m as any).masukRapor !== false
+        );
         const evals = calculateClassAcademicReport({
           santriInKelas: santriInKls,
           activeMapelList: mapelsForThisKls,

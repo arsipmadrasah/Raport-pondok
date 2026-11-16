@@ -270,8 +270,13 @@ export function InputNilaiSpreadsheetView({
                       className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-50 border border-slate-200/80"
                     >
                       <div className="min-w-0">
-                        <div className="font-bold text-xs text-slate-800 truncate">
-                          {mp.namaLatin}
+                        <div className="font-bold text-xs text-slate-800 truncate flex items-center gap-1.5">
+                          <span>{mp.namaLatin}</span>
+                          {mp.masukRapor === false && (
+                            <span className="text-[9px] px-1 py-0.2 font-bold bg-amber-100 text-amber-800 rounded border border-amber-200">
+                              Rekap
+                            </span>
+                          )}
                         </div>
                         <div dir="rtl" className="font-arabic text-xs text-emerald-700 text-left">
                           {mp.namaArab}
@@ -323,6 +328,13 @@ export function InputNilaiSpreadsheetView({
                   <div dir="rtl" className="font-arabic text-sm text-emerald-800 font-normal">
                     {mp.namaArab}
                   </div>
+                  {mp.masukRapor === false && (
+                    <div className="mt-0.5">
+                      <span className="inline-block px-1.5 py-0.2 text-[9px] font-bold bg-amber-100 text-amber-800 rounded border border-amber-300">
+                        Hanya Rekap
+                      </span>
+                    </div>
+                  )}
                 </th>
               ))}
               <th className="py-3 px-3 text-center border-r border-slate-200 min-w-[85px] bg-slate-100 font-bold text-slate-900">

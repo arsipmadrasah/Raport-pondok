@@ -37,7 +37,7 @@ export function CetakRaporView({
   );
 
   const classMapels = useMemo(
-    () => activeMapels.filter((m) => isMapelForKelas(m, selectedKelasId)),
+    () => activeMapels.filter((m) => isMapelForKelas(m, selectedKelasId) && m.masukRapor !== false),
     [activeMapels, selectedKelasId]
   );
 
@@ -572,7 +572,7 @@ export function CetakRaporView({
               kelasList={kelasList}
               evaluation={evaluation}
               kelompokMapelList={kelompokMapelList}
-              activeMapels={activeMapels}
+              activeMapels={classMapels}
               showRankOnRapor={showRankOnRapor}
             />
           </div>

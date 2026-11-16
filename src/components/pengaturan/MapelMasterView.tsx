@@ -284,6 +284,15 @@ const PONDOK_KITAB_DIRECTORY = [
     kelompokNama: 'Tarikh',
     kelompokArab: 'التاريخ',
     keywords: ['siroh', 'nabawi', 'sirah']
+  },
+
+  // PELAJARAN UMUM & BAHASA
+  {
+    namaLatin: 'Bahasa Inggris',
+    namaArab: 'اللغة الإنجليزية',
+    kelompokNama: 'Pelajaran Umum',
+    kelompokArab: 'المواد العامة',
+    keywords: ['inggris', 'bahasa inggris', 'english']
   }
 ];
 
@@ -297,7 +306,8 @@ const PRESET_KELOMPOK_SUGGESTIONS = [
   { nama: 'Tafsir', arab: 'التفسير', kode: 'TAFSIR' },
   { nama: 'Tajwid', arab: 'التجويد', kode: 'TAJWID' },
   { nama: 'Tarikh Islam', arab: 'التاريخ الإسلامي', kode: 'TARIKH' },
-  { nama: 'Tasawuf', arab: 'التصوف', kode: 'TASAWUF' }
+  { nama: 'Tasawuf', arab: 'التصوف', kode: 'TASAWUF' },
+  { nama: 'Pelajaran Umum', arab: 'المواد العامة', kode: 'UMUM' }
 ];
 
 export function MapelMasterView({
@@ -325,8 +335,9 @@ export function MapelMasterView({
   const [filterKelasId, setFilterKelasId] = useState('ALL');
   const [suggestedKitabList, setSuggestedKitabList] = useState([]);
 
-  // State untuk peruntukan kelas saat input kitab baru
+  // State untuk peruntukan kelas & opsi masuk rapor saat input kitab baru
   const [newTargetKelasIds, setNewTargetKelasIds] = useState(['ALL']);
+  const [newMasukRapor, setNewMasukRapor] = useState(true);
 
   // State untuk modal edit peruntukan kelas
   const [editingKitabForKelas, setEditingKitabForKelas] = useState(null);
@@ -337,6 +348,7 @@ export function MapelMasterView({
   const [modalEditKelompokId, setModalEditKelompokId] = useState('');
   const [modalEditNamaLatin, setModalEditNamaLatin] = useState('');
   const [modalEditNamaArab, setModalEditNamaArab] = useState('');
+  const [modalEditMasukRapor, setModalEditMasukRapor] = useState(true);
   const [showInlineAddKelompok, setShowInlineAddKelompok] = useState(false);
   const [inlineNewKelompokNama, setInlineNewKelompokNama] = useState('');
   const [inlineNewKelompokArab, setInlineNewKelompokArab] = useState('');
@@ -351,6 +363,9 @@ export function MapelMasterView({
     }
 
     const clean = val.trim().toLowerCase();
+    if (clean.includes('inggris')) {
+      setNewMasukRapor(false);
+    }
 
     // Tampilkan suggestion autocomplete
     const matches = PONDOK_KITAB_DIRECTORY.filter(
@@ -442,6 +457,9 @@ export function MapelMasterView({
     setNamaLatin(kitab.namaLatin);
     setNamaArab(kitab.namaArab);
     setSuggestedKitabList([]);
+    if (kitab.namaLatin.toLowerCase().includes('inggris')) {
+      setNewMasukRapor(false);
+    }
 
     const targetGroup = kelompokMapelList.find(
       (g) =>
@@ -498,7 +516,8 @@ export function MapelMasterView({
       kelompokId,
       urutanTampil: mapelList.length + 1,
       statusAktif: true,
-      statusWajib: true,
+      statusWajib: newMasukRapor,
+      masukRapor: newMasukRapor,
       targetKelasIds: finalTargetKelasIds
     };
 
@@ -511,11 +530,19 @@ export function MapelMasterView({
       localStorage.setItem('rapor_kitab_kelas_map', JSON.stringify(currentMap));
     } catch (_) { }
 
+    // Simpan status masuk rapor ke localStorage
+    try {
+      const masukMap = JSON.parse(localStorage.getItem('rapor_kitab_masuk_rapor_map') || '{}');
+      masukMap[newMp.id] = newMasukRapor;
+      localStorage.setItem('rapor_kitab_masuk_rapor_map', JSON.stringify(masukMap));
+    } catch (_) { }
+
     setNamaLatin('');
     setNamaArab('');
     setAutoDetectedGroup(null);
     setSuggestedKitabList([]);
     setNewTargetKelasIds(['ALL']);
+    setNewMasukRapor(true);
 
     try {
       await SupabaseDB.upsert('mata_pelajaran', {
@@ -633,6 +660,7 @@ export function MapelMasterView({
     setModalEditKelompokId(m.kelompokId || kelompokMapelList[0]?.id || '');
     setModalEditNamaLatin(m.namaLatin || '');
     setModalEditNamaArab(m.namaArab || '');
+    setModalEditMasukRapor(m.masukRapor !== false);
     setShowInlineAddKelompok(false);
     setInlineNewKelompokNama('');
     setInlineNewKelompokArab('');
@@ -650,12 +678,19 @@ export function MapelMasterView({
       ...editingKitabForKelompok,
       namaLatin: modalEditNamaLatin.trim(),
       namaArab: modalEditNamaArab.trim(),
-      kelompokId: modalEditKelompokId
+      kelompokId: modalEditKelompokId,
+      masukRapor: modalEditMasukRapor
     };
 
     setMapelList((prev) =>
       prev.map((m) => (m.id === editingKitabForKelompok.id ? updatedMp : m))
     );
+
+    try {
+      const masukMap = JSON.parse(localStorage.getItem('rapor_kitab_masuk_rapor_map') || '{}');
+      masukMap[updatedMp.id] = modalEditMasukRapor;
+      localStorage.setItem('rapor_kitab_masuk_rapor_map', JSON.stringify(masukMap));
+    } catch (_) { }
 
     try {
       await SupabaseDB.updateById('mata_pelajaran', editingKitabForKelompok.id, {
@@ -668,12 +703,38 @@ export function MapelMasterView({
     const targetGrp = kelompokMapelList.find((g) => g.id === modalEditKelompokId);
     addLog(
       'EDIT_MAPEL',
-      `Mengubah kelompok kitab ${updatedMp.namaLatin} menjadi ${targetGrp?.namaKelompok || 'Umum'}`
+      `Mengubah kelompok kitab ${updatedMp.namaLatin} menjadi ${targetGrp?.namaKelompok || 'Umum'} (Status Rapor: ${modalEditMasukRapor ? 'Masuk Rapor' : 'Hanya Rekap'})`
     );
     showToast(
-      `Kelompok kitab "${updatedMp.namaLatin}" berhasil diubah ke ${targetGrp?.namaKelompok || ''}!`
+      `Pengaturan kitab "${updatedMp.namaLatin}" berhasil disimpan!`
     );
     setEditingKitabForKelompok(null);
+  };
+
+  // Toggle cepat status masuk rapor langsung dari baris tabel
+  const handleToggleMasukRapor = (mapelId) => {
+    const target = mapelList.find((m) => m.id === mapelId);
+    if (!target) return;
+    const nextVal = target.masukRapor === false ? true : false;
+
+    setMapelList((prev) =>
+      prev.map((m) => (m.id === mapelId ? { ...m, masukRapor: nextVal } : m))
+    );
+
+    try {
+      const masukMap = JSON.parse(localStorage.getItem('rapor_kitab_masuk_rapor_map') || '{}');
+      masukMap[mapelId] = nextVal;
+      localStorage.setItem('rapor_kitab_masuk_rapor_map', JSON.stringify(masukMap));
+    } catch (_) { }
+
+    const statusText = nextVal
+      ? 'dicetak di Lembar Rapor A4 & Rekapan'
+      : 'hanya sampai Rekapan (tidak dicetak di lembar Rapor)';
+    showToast(`Mapel "${target.namaLatin}" sekarang ${statusText}`);
+    addLog(
+      'TOGGLE_MASUK_RAPOR',
+      `Mengubah status rapor mapel ${target.namaLatin} -> ${nextVal ? 'Masuk Rapor' : 'Hanya Rekap'}`
+    );
   };
 
   // Tambah kelompok baru langsung dari dalam modal edit
@@ -940,6 +1001,33 @@ export function MapelMasterView({
                   </button>
                 );
               })}
+            </div>
+
+            {/* OPSI STATUS RAPOR: APAKAH MASUK LEMBAR RAPOR CETAK ATAU HANYA REKAPAN */}
+            <div className="mt-2.5 pt-2 border-t border-slate-200/60 flex flex-wrap items-center justify-between gap-2">
+              <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={newMasukRapor}
+                  onChange={(e) => setNewMasukRapor(e.target.checked)}
+                  className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 cursor-pointer"
+                />
+                <span className="text-xs font-bold text-slate-800">
+                  Cetak di Lembar Rapor A4
+                </span>
+                <span
+                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full border transition ${
+                    newMasukRapor
+                      ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                      : 'bg-amber-50 text-amber-800 border-amber-300'
+                  }`}
+                >
+                  {newMasukRapor ? '✓ Tampil di Rapor & Rekapan' : '⚠️ Hanya Sampai Rekapan (Non-Rapor)'}
+                </span>
+              </label>
+              <span className="text-[11px] text-slate-500">
+                (Unchecklist jika mapel hanya untuk rekap/arsip nilai, seperti Bahasa Inggris)
+              </span>
             </div>
           </div>
 
@@ -1419,6 +1507,37 @@ export function MapelMasterView({
                     );
                   })}
                 </div>
+
+                {/* OPSI STATUS RAPOR DI MODAL EDIT */}
+                <div className="pt-2">
+                  <label className="flex items-center justify-between p-3 rounded-xl border border-slate-200 bg-slate-50/70 cursor-pointer select-none">
+                    <div className="flex items-center gap-2.5">
+                      <input
+                        type="checkbox"
+                        checked={modalEditMasukRapor}
+                        onChange={(e) => setModalEditMasukRapor(e.target.checked)}
+                        className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 cursor-pointer"
+                      />
+                      <div>
+                        <div className="text-xs font-bold text-slate-800">Cetak di Lembar Rapor A4</div>
+                        <div className="text-[11px] text-slate-500">
+                          {modalEditMasukRapor
+                            ? 'Nilai akan dicetak di lembar resmi Rapor A4 dan masuk rekapan'
+                            : 'Nilai hanya disimpan sampai rekapan spreadsheet (tidak dicetak di lembar Rapor)'}
+                        </div>
+                      </div>
+                    </div>
+                    <span
+                      className={`text-[10px] font-bold px-2.5 py-1 rounded-full border shrink-0 ${
+                        modalEditMasukRapor
+                          ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                          : 'bg-amber-50 text-amber-800 border-amber-300'
+                      }`}
+                    >
+                      {modalEditMasukRapor ? 'Rapor & Rekap' : 'Hanya Rekap'}
+                    </span>
+                  </label>
+                </div>
               </div>
 
               {/* FOOTER MODAL */}
@@ -1502,13 +1621,14 @@ export function MapelMasterView({
                 <th className="py-3 px-4 text-left font-bold">Nama Kitab (Latin)</th>
                 <th className="py-3 px-4 text-right font-bold">Nama Kitab (Arab)</th>
                 <th className="py-3 px-4 text-left font-bold">Peruntukan Kelas</th>
+                <th className="py-3 px-4 text-center font-bold">Status Rapor</th>
                 <th className="py-3 px-4 text-right font-bold w-20">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filteredMapels.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-slate-400">
+                  <td colSpan={7} className="py-8 text-center text-slate-400">
                     Tidak ada mata pelajaran yang cocok dengan filter yang dipilih.
                   </td>
                 </tr>
@@ -1577,6 +1697,30 @@ export function MapelMasterView({
                             <span>Atur Kelas</span>
                           </button>
                         </div>
+                      </td>
+                      <td className="py-2.5 px-4 text-center whitespace-nowrap">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleMasukRapor(m.id)}
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[10px] font-bold transition cursor-pointer ${
+                            m.masukRapor !== false
+                              ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
+                              : 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100'
+                          }`}
+                          title="Klik untuk mengubah apakah nilai mapel ini dicetak di lembar Rapor A4 atau hanya rekapan"
+                        >
+                          {m.masukRapor !== false ? (
+                            <>
+                              <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                              <span>Rapor &amp; Rekap</span>
+                            </>
+                          ) : (
+                            <>
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                              <span>Hanya Rekap</span>
+                            </>
+                          )}
+                        </button>
                       </td>
                       <td className="py-2.5 px-4 text-right">
                         <div className="flex items-center justify-end gap-1">

@@ -190,7 +190,8 @@ export const INITIAL_KELOMPOK_MAPEL = [
   { id: 'grp-tajwid', kode: 'TAJWID', namaKelompok: 'Tajwid', namaArab: 'تجويد', urutan: 7 },
   { id: 'grp-quran', kode: 'AL_QURAN', namaKelompok: 'Al-Qur’an', namaArab: 'القرآن', urutan: 8 },
   { id: 'grp-aqidah-akhlak', kode: 'AQIDAH_AKHLAK', namaKelompok: 'Aqidah Akhlak', namaArab: 'العقيدة والاخلاق', urutan: 9 },
-  { id: 'grp-tarikh', kode: 'TARIKH', namaKelompok: 'Tarikh', namaArab: 'التاريخ', urutan: 10 }
+  { id: 'grp-tarikh', kode: 'TARIKH', namaKelompok: 'Tarikh', namaArab: 'التاريخ', urutan: 10 },
+  { id: 'grp-umum', kode: 'UMUM', namaKelompok: 'Pelajaran Umum', namaArab: 'المواد العامة', urutan: 11 }
 ];
 
 export const INITIAL_MAPEL = [
@@ -402,6 +403,18 @@ export const INITIAL_MAPEL = [
     statusAktif: true,
     statusWajib: true,
     targetKelasIds: ['kls-1794194070001', 'kls-1794194269522']
+  },
+  {
+    id: 'mp-inggris',
+    kodeMapel: 'ING-01',
+    namaLatin: 'Bahasa Inggris',
+    namaArab: 'اللغة الإنجليزية',
+    kelompokId: 'grp-umum',
+    urutanTampil: 22,
+    statusAktif: true,
+    statusWajib: false,
+    masukRapor: false,
+    targetKelasIds: ['ALL']
   }
 ];
 

@@ -20,7 +20,7 @@ export function RaporA4Sheet({
     .map((grp) => ({
       kelompok: grp,
       items: activeMapels
-        .filter((m) => m.kelompokId === grp.id && isMapelForKelas(m, santriKelas?.id))
+        .filter((m) => m.kelompokId === grp.id && isMapelForKelas(m, santriKelas?.id) && m.masukRapor !== false)
         .sort((a, b) => a.urutanTampil - b.urutanTampil)
     }))
     .filter((g) => g.items.length > 0);

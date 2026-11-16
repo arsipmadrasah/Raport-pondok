@@ -337,7 +337,12 @@ export function RekapNilaiView({
               {activeMapelFiltered.map((mp) => (
                 <React.Fragment key={mp.id}>
                   <th className="py-2.5 px-3 text-center border border-slate-300 font-bold whitespace-nowrap bg-[#E6EFF8] text-slate-900 min-w-[90px]">
-                    {mp.namaLatin}
+                    <div>{mp.namaLatin}</div>
+                    {mp.masukRapor === false && (
+                      <span className="inline-block text-[10px] px-1.5 py-0.2 font-medium bg-amber-100 text-amber-800 rounded border border-amber-300 mt-0.5">
+                        Hanya Rekap
+                      </span>
+                    )}
                   </th>
                   <th className="py-2.5 px-3 text-center border border-slate-300 font-semibold whitespace-nowrap bg-[#EEF2F6] text-slate-600 text-[11px] min-w-[110px]">
                     {cleanMapelHeaderKey(mp.namaLatin)}
