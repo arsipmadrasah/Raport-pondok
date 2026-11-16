@@ -8,7 +8,7 @@ import {
   Info,
   GraduationCap
 } from 'lucide-react';
-import { calculateClassAcademicReport, isMapelForKelas } from '../../utils/academicHelpers';
+import { calculateClassAcademicReport, isMapelForKelas, isMapelMasukRapor } from '../../utils/academicHelpers';
 import { normalizeTingkat } from '../../constants/initialData';
 import { RaporA4Sheet } from './RaporA4Sheet';
 
@@ -37,7 +37,7 @@ export function CetakRaporView({
   );
 
   const classMapels = useMemo(
-    () => activeMapels.filter((m) => isMapelForKelas(m, selectedKelasId) && m.masukRapor !== false),
+    () => activeMapels.filter((m) => isMapelForKelas(m, selectedKelasId) && isMapelMasukRapor(m)),
     [activeMapels, selectedKelasId]
   );
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { BaliBinaInsaniLogo } from '../common/BaliBinaInsaniLogo';
-import { isMapelForKelas } from '../../utils/academicHelpers';
+import { isMapelForKelas, isMapelMasukRapor } from '../../utils/academicHelpers';
 
 export function RaporA4Sheet({
   pondok,
@@ -20,7 +20,7 @@ export function RaporA4Sheet({
     .map((grp) => ({
       kelompok: grp,
       items: activeMapels
-        .filter((m) => m.kelompokId === grp.id && isMapelForKelas(m, santriKelas?.id) && m.masukRapor !== false)
+        .filter((m) => m.kelompokId === grp.id && isMapelForKelas(m, santriKelas?.id) && isMapelMasukRapor(m))
         .sort((a, b) => a.urutanTampil - b.urutanTampil)
     }))
     .filter((g) => g.items.length > 0);

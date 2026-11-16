@@ -80,6 +80,16 @@ export function isMapelForKelas(mapel: any, kelasId: string): boolean {
   return targets.includes(kelasId);
 }
 
+export function isMapelMasukRapor(mapel: any): boolean {
+  if (!mapel) return false;
+  if (mapel.masukRapor === false) return false;
+  const nama = String(mapel.namaLatin || mapel.nama_latin || '').toLowerCase().trim();
+  if (mapel.masukRapor === undefined && nama.includes('bahasa inggris')) {
+    return false;
+  }
+  return true;
+}
+
 export function calculateClassAcademicReport({
   santriInKelas = [],
   activeMapelList = [],

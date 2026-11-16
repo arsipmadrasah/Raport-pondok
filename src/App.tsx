@@ -41,6 +41,7 @@ import {
 
 import {
   isMapelForKelas,
+  isMapelMasukRapor,
   calculateClassAcademicReport,
   getWitaTimeString
 } from './utils/academicHelpers';
@@ -856,10 +857,23 @@ export default function App() {
         } catch (_) { }
 
         const existingMapelIds = new Set(mapelRows.map((m: any) => m.id));
-        const missingInitialMapels = INITIAL_MAPEL.filter((im) => !existingMapelIds.has(im.id));
+        const existingMapelNames = new Set(
+          mapelRows.map((m: any) => String(m.nama_latin || '').toLowerCase().trim())
+        );
+        const missingInitialMapels = INITIAL_MAPEL.filter(
+          (im) =>
+            !existingMapelIds.has(im.id) &&
+            !existingMapelNames.has(im.namaLatin.toLowerCase().trim())
+        );
 
         const parsedLoadedMapels = mapelRows.map((m: any) => {
-          const initialMatch = INITIAL_MAPEL.find((im) => im.id === m.id);
+          const namaLower = String(m.nama_latin || '').toLowerCase().trim();
+          const isBahasaInggris = namaLower.includes('bahasa inggris');
+          const initialMatch = INITIAL_MAPEL.find(
+            (im) =>
+              im.id === m.id ||
+              im.namaLatin.toLowerCase().trim() === namaLower
+          );
           const targetKelasIds =
             savedKitabKelasMap[m.id] ||
             initialMatch?.targetKelasIds ||
@@ -867,7 +881,7 @@ export default function App() {
           const masukRapor =
             savedMasukRaporMap[m.id] !== undefined
               ? savedMasukRaporMap[m.id]
-              : (initialMatch ? ((initialMatch as any).masukRapor ?? true) : true);
+              : (initialMatch ? ((initialMatch as any).masukRapor ?? !isBahasaInggris) : !isBahasaInggris);
           return {
             id: m.id,
             kodeMapel: m.kode_mapel,
@@ -1072,7 +1086,7 @@ export default function App() {
       .map((kls) => {
         const santriInKls = activeSantri.filter((s) => s.kelasId === kls.id);
         const mapelsForThisKls = activeMapels.filter(
-          (m) => isMapelForKelas(m, kls.id) && (m as any).masukRapor !== false
+          (m) => isMapelForKelas(m, kls.id) && isMapelMasukRapor(m)
         );
         const evals = calculateClassAcademicReport({
           santriInKelas: santriInKls,
