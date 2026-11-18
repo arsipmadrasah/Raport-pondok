@@ -299,17 +299,40 @@ export function RekapNilaiView({
       const semNama = semester?.nama || 'Ganjil';
       const waliInfo = currentKelas?.waliKelas ? ` • Wali Kelas: ${currentKelas.waliKelas}` : '';
 
+      // Ukuran pas A4 Landscape (297mm x 210mm pada 96dpi) dengan margin 7mm (26px) di semua sisi
+      const stageWidth = 1123;
+      const pageHeightPx = 794;
+      const padPx = 26;
+      const innerWidth = stageWidth - padPx * 2; // 1071px
+      const innerMaxHeight = pageHeightPx - padPx * 2; // 742px
+
+      const mapelCount = Math.max(activeMapelFiltered.length, 1);
+      const baseFontSize = mapelCount <= 5 ? 10 : mapelCount <= 7 ? 9 : 8;
+      const headerFontSize = mapelCount <= 5 ? 9.5 : mapelCount <= 7 ? 8.5 : 7.5;
+      const cellPad = mapelCount <= 5 ? '5px 5px' : mapelCount <= 7 ? '4.5px 4px' : '3.5px 3px';
+
+      const noW = 24;
+      const namaW = mapelCount <= 5 ? 175 : mapelCount <= 7 ? 155 : 135;
+      const kelasW = 34;
+      const jumlahW = 44;
+      const rataW = 44;
+      const rankW = 42;
+      const fixedW = noW + namaW + kelasW + jumlahW + rataW + rankW;
+      const perMapelW = Math.floor((innerWidth - fixedW) / mapelCount);
+      const scoreColW = Math.floor(perMapelW * 0.44);
+      const predColW = perMapelW - scoreColW;
+
       const buildHeaderHtml = (pageNum: number, totalPages: number) => `
-        <div style="margin-bottom:10px;border-bottom:2px solid #064E3B;padding-bottom:8px;display:flex;justify-content:space-between;align-items:flex-end;gap:12px;">
+        <div style="margin-bottom:8px;border-bottom:2px solid #064E3B;padding-bottom:6px;display:flex;justify-content:space-between;align-items:flex-end;gap:12px;">
           <div style="min-width:0;flex:1;">
-            <div style="font-size:15px;font-weight:900;color:#064E3B;letter-spacing:0.3px;line-height:1.2;">
+            <div style="font-size:15px;font-weight:900;color:#064E3B;letter-spacing:0.2px;line-height:1.2;">
               REKAPITULASI NILAI SANTRI — ${escapeHtml(kelasLabel.toUpperCase())}
             </div>
-            <div style="font-size:10px;color:#334155;margin-top:3px;font-weight:600;">
+            <div style="font-size:10px;color:#334155;margin-top:2px;font-weight:600;">
               Pondok Pesantren Bali Bina Insani • Periode: ${escapeHtml(taNama)} (${escapeHtml(semNama)})${escapeHtml(waliInfo)} • Total: ${totalSantriDiRekap} Santri
             </div>
-            <div style="font-size:9.5px;color:#475569;margin-top:2px;line-height:1.3;">
-              <strong>Mata Pelajaran:</strong> ${escapeHtml(mapelLabelRaw)}
+            <div style="font-size:9px;color:#475569;margin-top:2px;line-height:1.25;">
+              <strong>Mata Pelajaran (${activeMapelFiltered.length}):</strong> ${escapeHtml(mapelLabelRaw)}
             </div>
           </div>
           <div style="text-align:right;flex-shrink:0;">
@@ -317,7 +340,7 @@ export function RekapNilaiView({
               <span style="display:inline-block;width:7px;height:7px;border-radius:999px;background:#DC2626;"></span>
               Merah = Dhoif (&lt; 2.70) / Kosong
             </div>
-            <div style="font-size:9px;color:#64748B;margin-top:4px;font-weight:600;">
+            <div style="font-size:9px;color:#64748B;margin-top:3px;font-weight:600;">
               Halaman ${pageNum} dari ${totalPages}
             </div>
           </div>
@@ -326,89 +349,88 @@ export function RekapNilaiView({
 
       const buildTheadHtml = () => `
         <thead>
-          <tr style="background:#EEF2F6;color:#1E293B;">
-            <th style="padding:6px 6px;text-align:center;border:1px solid #CBD5E1;font-weight:800;white-space:nowrap;width:28px;">No</th>
-            <th style="padding:6px 8px;text-align:left;border:1px solid #CBD5E1;font-weight:800;white-space:nowrap;min-width:155px;">NAMA</th>
-            <th style="padding:6px 6px;text-align:center;border:1px solid #CBD5E1;font-weight:800;white-space:nowrap;width:44px;">Kelas</th>
+          <tr style="background:#EEF2F6;color:#1E293B;font-size:${headerFontSize}px;">
+            <th style="padding:${cellPad};text-align:center;border:1px solid #CBD5E1;font-weight:800;width:${noW}px;">No</th>
+            <th style="padding:${cellPad};text-align:left;border:1px solid #CBD5E1;font-weight:800;width:${namaW}px;">NAMA</th>
+            <th style="padding:${cellPad};text-align:center;border:1px solid #CBD5E1;font-weight:800;width:${kelasW}px;">Kelas</th>
             ${activeMapelFiltered
-              .map(
-                (mp) => `
-              <th style="padding:6px 6px;text-align:center;border:1px solid #CBD5E1;font-weight:800;white-space:nowrap;background:#E6EFF8;color:#0F172A;">
-                ${escapeHtml(mp.namaLatin)}${mp.masukRapor === false ? ' <span style="font-size:8px;color:#92400E;">(Rekap)</span>' : ''}
+          .map(
+            (mp) => `
+              <th style="padding:${cellPad};text-align:center;border:1px solid #CBD5E1;font-weight:800;background:#E6EFF8;color:#0F172A;width:${scoreColW}px;line-height:1.15;word-break:break-word;">
+                ${escapeHtml(mp.namaLatin)}${mp.masukRapor === false ? ' <span style="font-size:7.5px;color:#92400E;">(Rekap)</span>' : ''}
               </th>
-              <th style="padding:6px 6px;text-align:center;border:1px solid #CBD5E1;font-weight:700;white-space:nowrap;background:#EEF2F6;color:#475569;font-size:8.5px;">
-                ${escapeHtml(cleanMapelHeaderKey(mp.namaLatin))}
+              <th style="padding:${cellPad};text-align:center;border:1px solid #CBD5E1;font-weight:700;background:#EEF2F6;color:#475569;width:${predColW}px;line-height:1.15;">
+                Predikat
               </th>
             `
-              )
-              .join('')}
-            <th style="padding:6px 6px;text-align:center;border:1px solid #CBD5E1;font-weight:800;white-space:nowrap;background:#E2E8F0;color:#0F172A;">Jumlah</th>
-            <th style="padding:6px 6px;text-align:center;border:1px solid #CBD5E1;font-weight:800;white-space:nowrap;background:#E2E8F0;color:#0F172A;">ratarata</th>
-            <th style="padding:6px 6px;text-align:center;border:1px solid #CBD5E1;font-weight:800;white-space:nowrap;background:#FEF3C7;color:#78350F;">perigkat</th>
+          )
+          .join('')}
+            <th style="padding:${cellPad};text-align:center;border:1px solid #CBD5E1;font-weight:800;background:#E2E8F0;color:#0F172A;width:${jumlahW}px;">Jumlah</th>
+            <th style="padding:${cellPad};text-align:center;border:1px solid #CBD5E1;font-weight:800;background:#E2E8F0;color:#0F172A;width:${rataW}px;">Rata-rata</th>
+            <th style="padding:${cellPad};text-align:center;border:1px solid #CBD5E1;font-weight:800;background:#FEF3C7;color:#78350F;width:${rankW}px;">Peringkat</th>
           </tr>
         </thead>
       `;
 
       const buildRowHtml = (row: any, idx: number) => `
-        <tr>
-          <td style="padding:5px 6px;text-align:center;border:1px solid #CBD5E1;color:#475569;background:#F8FAFC;">${idx + 1}</td>
-          <td style="padding:5px 8px;text-align:left;border:1px solid #CBD5E1;font-weight:800;color:#0F172A;text-transform:uppercase;white-space:nowrap;">${escapeHtml(row.santri.namaLengkap)}</td>
-          <td style="padding:5px 6px;text-align:center;border:1px solid #CBD5E1;font-weight:700;color:#334155;white-space:nowrap;">${escapeHtml(row.namaKelas)}</td>
+        <tr style="font-size:${baseFontSize}px;">
+          <td style="padding:${cellPad};text-align:center;border:1px solid #CBD5E1;color:#475569;background:#F8FAFC;">${idx + 1}</td>
+          <td style="padding:${cellPad};text-align:left;border:1px solid #CBD5E1;font-weight:800;color:#0F172A;text-transform:uppercase;line-height:1.2;word-break:break-word;">${escapeHtml(row.santri.namaLengkap)}</td>
+          <td style="padding:${cellPad};text-align:center;border:1px solid #CBD5E1;font-weight:700;color:#334155;">${escapeHtml(row.namaKelas)}</td>
           ${activeMapelFiltered
-            .map((mp) => {
-              const sc = row.mapelScores[mp.id];
-              const isRed = sc ? sc.isDhoif || sc.isKosong : true;
-              const valDisplay =
-                sc && sc.isFilled && sc.angkaNilai !== null
-                  ? Number.isInteger(sc.angkaNilai)
-                    ? sc.angkaNilai
-                    : sc.angkaNilai.toFixed(2)
-                  : '—';
-              const predDisplay = sc && sc.isFilled ? sc.predikatLatin : 'Kosong';
+          .map((mp) => {
+            const sc = row.mapelScores[mp.id];
+            const isRed = sc ? sc.isDhoif || sc.isKosong : true;
+            const valDisplay =
+              sc && sc.isFilled && sc.angkaNilai !== null
+                ? Number.isInteger(sc.angkaNilai)
+                  ? sc.angkaNilai
+                  : sc.angkaNilai.toFixed(2)
+                : '—';
+            const predDisplay = sc && sc.isFilled ? sc.predikatLatin : 'Kosong';
 
-              const scoreStyle = isRed
-                ? 'background:#EF4444;color:#FFFFFF;border:1px solid #DC2626;'
-                : 'background:#FFFFFF;color:#1E293B;border:1px solid #CBD5E1;';
-              const predStyle = sc?.isKosong
-                ? 'background:#FEF2F2;color:#DC2626;border:1px solid #CBD5E1;font-weight:600;font-style:italic;'
-                : sc?.isDhoif
-                  ? 'background:#FEF2F2;color:#B91C1C;border:1px solid #CBD5E1;font-weight:700;'
-                  : 'background:#FFFFFF;color:#334155;border:1px solid #CBD5E1;';
+            const scoreStyle = isRed
+              ? 'background:#EF4444;color:#FFFFFF;border:1px solid #DC2626;'
+              : 'background:#FFFFFF;color:#1E293B;border:1px solid #CBD5E1;';
+            const predStyle = sc?.isKosong
+              ? 'background:#FEF2F2;color:#DC2626;border:1px solid #CBD5E1;font-weight:600;font-style:italic;'
+              : sc?.isDhoif
+                ? 'background:#FEF2F2;color:#B91C1C;border:1px solid #CBD5E1;font-weight:700;'
+                : 'background:#FFFFFF;color:#334155;border:1px solid #CBD5E1;';
 
-              return `
-              <td style="padding:5px 6px;text-align:center;font-family:monospace;font-weight:800;white-space:nowrap;${scoreStyle}">${escapeHtml(valDisplay)}</td>
-              <td style="padding:5px 6px;text-align:center;white-space:nowrap;${predStyle}">${escapeHtml(predDisplay)}</td>
+            return `
+              <td style="padding:${cellPad};text-align:center;font-family:monospace;font-weight:800;${scoreStyle}">${escapeHtml(valDisplay)}</td>
+              <td style="padding:${cellPad};text-align:center;line-height:1.15;${predStyle}">${escapeHtml(predDisplay)}</td>
             `;
-            })
-            .join('')}
-          <td style="padding:5px 6px;text-align:center;border:1px solid #CBD5E1;font-family:monospace;font-weight:800;color:#0F172A;background:#F8FAFC;white-space:nowrap;">
+          })
+          .join('')}
+          <td style="padding:${cellPad};text-align:center;border:1px solid #CBD5E1;font-family:monospace;font-weight:800;color:#0F172A;background:#F8FAFC;">
             ${row.filledCount > 0 ? row.totalScore.toFixed(2) : '—'}
           </td>
-          <td style="padding:5px 6px;text-align:center;border:1px solid #CBD5E1;font-family:monospace;font-weight:800;white-space:nowrap;${
-            row.filledCount > 0 && row.averageScore < 2.7
-              ? 'background:#FEE2E2;color:#991B1B;border-color:#FCA5A5;'
-              : 'background:#F8FAFC;color:#064E3B;'
-          }">
+          <td style="padding:${cellPad};text-align:center;border:1px solid #CBD5E1;font-family:monospace;font-weight:800;${row.filledCount > 0 && row.averageScore < 2.7
+          ? 'background:#FEE2E2;color:#991B1B;border-color:#FCA5A5;'
+          : 'background:#F8FAFC;color:#064E3B;'
+        }">
             ${row.filledCount > 0 ? row.averageScore.toFixed(2) : '—'}
           </td>
-          <td style="padding:5px 6px;text-align:center;border:1px solid #CBD5E1;font-weight:800;color:#0F172A;background:#FFFBEB;white-space:nowrap;">
+          <td style="padding:${cellPad};text-align:center;border:1px solid #CBD5E1;font-weight:800;color:#0F172A;background:#FFFBEB;">
             ${escapeHtml(row.rank)}
           </td>
         </tr>
       `;
 
-      // Tahap 1: Ukur lebar tabel aktual & tinggi tiap baris agar pas A4 Landscape tanpa terpotong samping
+      // Tahap 1: Ukur tinggi baris pada lebar konten A4 Landscape (1071px) untuk paginasi presisi
       measureStage = document.createElement('div');
       measureStage.style.position = 'fixed';
       measureStage.style.top = '0px';
       measureStage.style.left = '0px';
+      measureStage.style.width = `${innerWidth}px`;
       measureStage.style.visibility = 'hidden';
       measureStage.style.pointerEvents = 'none';
       measureStage.style.fontFamily = 'Inter, system-ui, -apple-system, sans-serif';
-      measureStage.style.width = 'max-content';
       measureStage.innerHTML = `
-        <div id="pdf-measure-header" style="width:1050px;">${buildHeaderHtml(1, 1)}</div>
-        <table id="pdf-measure-table" style="border-collapse:collapse;font-size:9.5px;width:auto;">
+        <div id="pdf-measure-header" style="width:${innerWidth}px;">${buildHeaderHtml(1, 1)}</div>
+        <table id="pdf-measure-table" style="border-collapse:collapse;table-layout:fixed;width:${innerWidth}px;">
           ${buildTheadHtml()}
           <tbody>
             ${rekapRows.map((row, idx) => buildRowHtml(row, idx)).join('')}
@@ -419,25 +441,10 @@ export function RekapNilaiView({
 
       const measureTable = measureStage.querySelector('#pdf-measure-table') as HTMLElement;
       const measureHeader = measureStage.querySelector('#pdf-measure-header') as HTMLElement;
-      const naturalTableWidth = measureTable ? measureTable.scrollWidth : 1050;
 
-      // Hitung stageWidth agar margin fisik di A4 Landscape (297x210mm) konsisten 8mm di semua sisi
-      const stageWidth = Math.max(1123, Math.ceil((naturalTableWidth * 297) / 281));
-      const padPx = Math.round(stageWidth * (8 / 297));
-      const pageHeightPx = Math.round(stageWidth * (210 / 297));
-      const innerWidth = stageWidth - padPx * 2;
-      const innerMaxHeight = pageHeightPx - padPx * 2;
-
-      if (measureHeader) {
-        measureHeader.style.width = `${innerWidth}px`;
-      }
-      if (measureTable) {
-        measureTable.style.width = '100%';
-      }
-
-      const headerH = measureHeader ? measureHeader.offsetHeight + 10 : 75;
+      const headerH = measureHeader ? measureHeader.offsetHeight + 8 : 72;
       const theadEl = measureTable?.querySelector('thead') as HTMLElement | null;
-      const theadH = theadEl ? theadEl.offsetHeight : 30;
+      const theadH = theadEl ? theadEl.offsetHeight : 32;
       const footerH = 26;
       const rowEls = Array.from(measureTable?.querySelectorAll('tbody tr') || []) as HTMLElement[];
 
@@ -447,7 +454,7 @@ export function RekapNilaiView({
       let usedH = headerH + theadH + footerH;
 
       for (let i = 0; i < rekapRows.length; i++) {
-        const rowH = rowEls[i] ? rowEls[i].offsetHeight : 25;
+        const rowH = rowEls[i] ? rowEls[i].offsetHeight : 24;
         if (currentPageRows.length > 0 && usedH + rowH > innerMaxHeight) {
           pages.push(currentPageRows);
           currentPageRows = [{ row: rekapRows[i], idx: i }];
@@ -503,14 +510,14 @@ export function RekapNilaiView({
         pageEl.innerHTML = `
           <div>
             ${buildHeaderHtml(p + 1, pages.length)}
-            <table style="width:100%;border-collapse:collapse;font-size:9.5px;">
+            <table style="width:${innerWidth}px;table-layout:fixed;border-collapse:collapse;">
               ${buildTheadHtml()}
               <tbody>
                 ${pages[p].map((item) => buildRowHtml(item.row, item.idx)).join('')}
               </tbody>
             </table>
           </div>
-          <div style="display:flex;justify-content:space-between;align-items:center;font-size:8.5px;color:#64748B;border-top:1px solid #E2E8F0;padding-top:6px;margin-top:8px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:8.5px;color:#64748B;border-top:1px solid #E2E8F0;padding-top:5px;margin-top:6px;">
             <span>E-Rapor Pesantren • Pondok Pesantren Bali Bina Insani</span>
             <span>Format A4 Landscape • Halaman ${p + 1} dari ${pages.length}</span>
           </div>
@@ -560,6 +567,12 @@ export function RekapNilaiView({
             pdfInstance.internal.getNumberOfPages() > 1
           ) {
             pdfInstance.deletePage(pdfInstance.internal.getNumberOfPages());
+          }
+          if (pdfInstance) {
+            pdfInstance.addPage('a4', 'landscape');
+            pdfInstance.deletePage(1);
+            pdfInstance.setPage(1);
+            pdfInstance.addImage(imgData, 'JPEG', 0, 0, 297, 210);
           }
         } else if (pdfInstance) {
           pdfInstance.addPage('a4', 'landscape');
@@ -797,8 +810,8 @@ export function RekapNilaiView({
                         {/* Kolom Nilai Angka: MERAH JIKA DHOIF ATAU KOSONG (Persis Cell D3 di Excel) */}
                         <td
                           className={`py-2 px-2.5 text-center border font-mono font-bold whitespace-nowrap transition-colors ${isRed
-                              ? 'bg-[#EF4444] text-white border-red-600'
-                              : 'bg-white text-slate-800 border-slate-300'
+                            ? 'bg-[#EF4444] text-white border-red-600'
+                            : 'bg-white text-slate-800 border-slate-300'
                             }`}
                           title={
                             sc?.isKosong
@@ -814,10 +827,10 @@ export function RekapNilaiView({
                         {/* Kolom Predikat Teks */}
                         <td
                           className={`py-2 px-2.5 text-center border whitespace-nowrap text-xs transition-colors ${sc?.isKosong
-                              ? 'bg-red-50 text-red-600 border-slate-300 font-semibold italic'
-                              : sc?.isDhoif
-                                ? 'bg-red-50 text-red-700 border-slate-300 font-bold'
-                                : 'bg-white text-slate-700 border-slate-300'
+                            ? 'bg-red-50 text-red-600 border-slate-300 font-semibold italic'
+                            : sc?.isDhoif
+                              ? 'bg-red-50 text-red-700 border-slate-300 font-bold'
+                              : 'bg-white text-slate-700 border-slate-300'
                             }`}
                         >
                           {predDisplay}
@@ -834,8 +847,8 @@ export function RekapNilaiView({
                   {/* ratarata (2 desimal, merah jika rata-rata Dhoif) */}
                   <td
                     className={`py-2 px-3 text-center border font-mono font-bold whitespace-nowrap ${row.filledCount > 0 && row.averageScore < 2.7
-                        ? 'bg-red-100 text-red-800 border-red-300'
-                        : 'bg-slate-50/50 text-emerald-900 border-slate-300'
+                      ? 'bg-red-100 text-red-800 border-red-300'
+                      : 'bg-slate-50/50 text-emerald-900 border-slate-300'
                       }`}
                   >
                     {row.filledCount > 0 ? row.averageScore.toFixed(2) : '—'}
