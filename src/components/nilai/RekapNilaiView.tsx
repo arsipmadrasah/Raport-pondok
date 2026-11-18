@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import * as XLSX from 'xlsx';
-import { Search, Download, Printer } from 'lucide-react';
+import { Search, Download, Printer, FileText, Loader2 } from 'lucide-react';
 import { isMapelForKelas, resolvePredikat } from '../../utils/academicHelpers';
 import { normalizeTingkat } from '../../constants/initialData';
 
@@ -27,6 +27,7 @@ export function RekapNilaiView({
   onJumpToPrint
 }) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   const currentKelas = useMemo(
     () => kelasList.find((k) => k.id === selectedKelasId),
@@ -221,6 +222,375 @@ export function RekapNilaiView({
     }
   };
 
+  const loadHtml2PdfScript = () =>
+    new Promise((resolve, reject) => {
+      if (typeof window !== 'undefined' && (window as any).html2pdf) {
+        resolve((window as any).html2pdf);
+        return;
+      }
+      const existing = document.getElementById('html2pdf-cdn-script');
+      if (existing) {
+        existing.addEventListener('load', () => resolve((window as any).html2pdf));
+        existing.addEventListener('error', reject);
+        return;
+      }
+      const script = document.createElement('script');
+      script.id = 'html2pdf-cdn-script';
+      script.src =
+        'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+      script.onload = () => resolve((window as any).html2pdf);
+      script.onerror = () => reject(new Error('Gagal memuat modul generator PDF'));
+      document.head.appendChild(script);
+    });
+
+  const escapeHtml = (str: any) =>
+    String(str ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+
+  // 5. Fungsi Download PDF A4 Landscape (Anti-Terpotong Samping & Sesuai Format Aplikasi)
+  const handleDownloadPdf = async () => {
+    if (rekapRows.length === 0) {
+      if (showToast) showToast('Tidak ada data santri untuk diunduh sebagai PDF.', 'warning');
+      return;
+    }
+
+    setIsGeneratingPdf(true);
+    if (showToast) showToast('Menyiapkan PDF A4 Landscape Rekap Nilai...');
+
+    let measureStage: HTMLElement | null = null;
+    let stageContainer: HTMLElement | null = null;
+    const prevScrollX = window.scrollX;
+    const prevScrollY = window.scrollY;
+
+    try {
+      const html2pdfLib: any = await loadHtml2PdfScript();
+      if (document.fonts && document.fonts.ready) {
+        await document.fonts.ready;
+      }
+
+      const kelasLabel =
+        selectedKelasId === 'ALL'
+          ? 'Semua Kelas'
+          : currentKelas
+            ? `Kelas ${currentKelas.namaKelas}`
+            : 'Kelas';
+      const mapelNamesList = activeMapelFiltered.map((m) => m.namaLatin);
+      const mapelLabelRaw =
+        mapelNamesList.length > 0 ? mapelNamesList.join(', ') : 'Semua Mapel';
+
+      const sanitizeFilePart = (str: string) =>
+        String(str || '')
+          .replace(/[\\/:*?"<>|]/g, '-')
+          .replace(/\s+/g, ' ')
+          .trim();
+
+      const safeKelas = sanitizeFilePart(kelasLabel);
+      let safeMapel = sanitizeFilePart(mapelLabelRaw);
+      if (safeMapel.length > 115) {
+        safeMapel = safeMapel.slice(0, 112).trim() + '...';
+      }
+      const fileName = `Rekap Nilai ${safeKelas} - ${safeMapel}.pdf`;
+
+      const taNama = tahunAjaran?.nama || '2026 – 2027';
+      const semNama = semester?.nama || 'Ganjil';
+      const waliInfo = currentKelas?.waliKelas ? ` • Wali Kelas: ${currentKelas.waliKelas}` : '';
+
+      const buildHeaderHtml = (pageNum: number, totalPages: number) => `
+        <div style="margin-bottom:10px;border-bottom:2px solid #064E3B;padding-bottom:8px;display:flex;justify-content:space-between;align-items:flex-end;gap:12px;">
+          <div style="min-width:0;flex:1;">
+            <div style="font-size:15px;font-weight:900;color:#064E3B;letter-spacing:0.3px;line-height:1.2;">
+              REKAPITULASI NILAI SANTRI — ${escapeHtml(kelasLabel.toUpperCase())}
+            </div>
+            <div style="font-size:10px;color:#334155;margin-top:3px;font-weight:600;">
+              Pondok Pesantren Bali Bina Insani • Periode: ${escapeHtml(taNama)} (${escapeHtml(semNama)})${escapeHtml(waliInfo)} • Total: ${totalSantriDiRekap} Santri
+            </div>
+            <div style="font-size:9.5px;color:#475569;margin-top:2px;line-height:1.3;">
+              <strong>Mata Pelajaran:</strong> ${escapeHtml(mapelLabelRaw)}
+            </div>
+          </div>
+          <div style="text-align:right;flex-shrink:0;">
+            <div style="display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:6px;background:#FEF2F2;border:1px solid #FECACA;color:#B91C1C;font-size:9px;font-weight:700;">
+              <span style="display:inline-block;width:7px;height:7px;border-radius:999px;background:#DC2626;"></span>
+              Merah = Dhoif (&lt; 2.70) / Kosong
+            </div>
+            <div style="font-size:9px;color:#64748B;margin-top:4px;font-weight:600;">
+              Halaman ${pageNum} dari ${totalPages}
+            </div>
+          </div>
+        </div>
+      `;
+
+      const buildTheadHtml = () => `
+        <thead>
+          <tr style="background:#EEF2F6;color:#1E293B;">
+            <th style="padding:6px 6px;text-align:center;border:1px solid #CBD5E1;font-weight:800;white-space:nowrap;width:28px;">No</th>
+            <th style="padding:6px 8px;text-align:left;border:1px solid #CBD5E1;font-weight:800;white-space:nowrap;min-width:155px;">NAMA</th>
+            <th style="padding:6px 6px;text-align:center;border:1px solid #CBD5E1;font-weight:800;white-space:nowrap;width:44px;">Kelas</th>
+            ${activeMapelFiltered
+              .map(
+                (mp) => `
+              <th style="padding:6px 6px;text-align:center;border:1px solid #CBD5E1;font-weight:800;white-space:nowrap;background:#E6EFF8;color:#0F172A;">
+                ${escapeHtml(mp.namaLatin)}${mp.masukRapor === false ? ' <span style="font-size:8px;color:#92400E;">(Rekap)</span>' : ''}
+              </th>
+              <th style="padding:6px 6px;text-align:center;border:1px solid #CBD5E1;font-weight:700;white-space:nowrap;background:#EEF2F6;color:#475569;font-size:8.5px;">
+                ${escapeHtml(cleanMapelHeaderKey(mp.namaLatin))}
+              </th>
+            `
+              )
+              .join('')}
+            <th style="padding:6px 6px;text-align:center;border:1px solid #CBD5E1;font-weight:800;white-space:nowrap;background:#E2E8F0;color:#0F172A;">Jumlah</th>
+            <th style="padding:6px 6px;text-align:center;border:1px solid #CBD5E1;font-weight:800;white-space:nowrap;background:#E2E8F0;color:#0F172A;">ratarata</th>
+            <th style="padding:6px 6px;text-align:center;border:1px solid #CBD5E1;font-weight:800;white-space:nowrap;background:#FEF3C7;color:#78350F;">perigkat</th>
+          </tr>
+        </thead>
+      `;
+
+      const buildRowHtml = (row: any, idx: number) => `
+        <tr>
+          <td style="padding:5px 6px;text-align:center;border:1px solid #CBD5E1;color:#475569;background:#F8FAFC;">${idx + 1}</td>
+          <td style="padding:5px 8px;text-align:left;border:1px solid #CBD5E1;font-weight:800;color:#0F172A;text-transform:uppercase;white-space:nowrap;">${escapeHtml(row.santri.namaLengkap)}</td>
+          <td style="padding:5px 6px;text-align:center;border:1px solid #CBD5E1;font-weight:700;color:#334155;white-space:nowrap;">${escapeHtml(row.namaKelas)}</td>
+          ${activeMapelFiltered
+            .map((mp) => {
+              const sc = row.mapelScores[mp.id];
+              const isRed = sc ? sc.isDhoif || sc.isKosong : true;
+              const valDisplay =
+                sc && sc.isFilled && sc.angkaNilai !== null
+                  ? Number.isInteger(sc.angkaNilai)
+                    ? sc.angkaNilai
+                    : sc.angkaNilai.toFixed(2)
+                  : '—';
+              const predDisplay = sc && sc.isFilled ? sc.predikatLatin : 'Kosong';
+
+              const scoreStyle = isRed
+                ? 'background:#EF4444;color:#FFFFFF;border:1px solid #DC2626;'
+                : 'background:#FFFFFF;color:#1E293B;border:1px solid #CBD5E1;';
+              const predStyle = sc?.isKosong
+                ? 'background:#FEF2F2;color:#DC2626;border:1px solid #CBD5E1;font-weight:600;font-style:italic;'
+                : sc?.isDhoif
+                  ? 'background:#FEF2F2;color:#B91C1C;border:1px solid #CBD5E1;font-weight:700;'
+                  : 'background:#FFFFFF;color:#334155;border:1px solid #CBD5E1;';
+
+              return `
+              <td style="padding:5px 6px;text-align:center;font-family:monospace;font-weight:800;white-space:nowrap;${scoreStyle}">${escapeHtml(valDisplay)}</td>
+              <td style="padding:5px 6px;text-align:center;white-space:nowrap;${predStyle}">${escapeHtml(predDisplay)}</td>
+            `;
+            })
+            .join('')}
+          <td style="padding:5px 6px;text-align:center;border:1px solid #CBD5E1;font-family:monospace;font-weight:800;color:#0F172A;background:#F8FAFC;white-space:nowrap;">
+            ${row.filledCount > 0 ? row.totalScore.toFixed(2) : '—'}
+          </td>
+          <td style="padding:5px 6px;text-align:center;border:1px solid #CBD5E1;font-family:monospace;font-weight:800;white-space:nowrap;${
+            row.filledCount > 0 && row.averageScore < 2.7
+              ? 'background:#FEE2E2;color:#991B1B;border-color:#FCA5A5;'
+              : 'background:#F8FAFC;color:#064E3B;'
+          }">
+            ${row.filledCount > 0 ? row.averageScore.toFixed(2) : '—'}
+          </td>
+          <td style="padding:5px 6px;text-align:center;border:1px solid #CBD5E1;font-weight:800;color:#0F172A;background:#FFFBEB;white-space:nowrap;">
+            ${escapeHtml(row.rank)}
+          </td>
+        </tr>
+      `;
+
+      // Tahap 1: Ukur lebar tabel aktual & tinggi tiap baris agar pas A4 Landscape tanpa terpotong samping
+      measureStage = document.createElement('div');
+      measureStage.style.position = 'fixed';
+      measureStage.style.top = '0px';
+      measureStage.style.left = '0px';
+      measureStage.style.visibility = 'hidden';
+      measureStage.style.pointerEvents = 'none';
+      measureStage.style.fontFamily = 'Inter, system-ui, -apple-system, sans-serif';
+      measureStage.style.width = 'max-content';
+      measureStage.innerHTML = `
+        <div id="pdf-measure-header" style="width:1050px;">${buildHeaderHtml(1, 1)}</div>
+        <table id="pdf-measure-table" style="border-collapse:collapse;font-size:9.5px;width:auto;">
+          ${buildTheadHtml()}
+          <tbody>
+            ${rekapRows.map((row, idx) => buildRowHtml(row, idx)).join('')}
+          </tbody>
+        </table>
+      `;
+      document.body.appendChild(measureStage);
+
+      const measureTable = measureStage.querySelector('#pdf-measure-table') as HTMLElement;
+      const measureHeader = measureStage.querySelector('#pdf-measure-header') as HTMLElement;
+      const naturalTableWidth = measureTable ? measureTable.scrollWidth : 1050;
+
+      // Hitung stageWidth agar margin fisik di A4 Landscape (297x210mm) konsisten 8mm di semua sisi
+      const stageWidth = Math.max(1123, Math.ceil((naturalTableWidth * 297) / 281));
+      const padPx = Math.round(stageWidth * (8 / 297));
+      const pageHeightPx = Math.round(stageWidth * (210 / 297));
+      const innerWidth = stageWidth - padPx * 2;
+      const innerMaxHeight = pageHeightPx - padPx * 2;
+
+      if (measureHeader) {
+        measureHeader.style.width = `${innerWidth}px`;
+      }
+      if (measureTable) {
+        measureTable.style.width = '100%';
+      }
+
+      const headerH = measureHeader ? measureHeader.offsetHeight + 10 : 75;
+      const theadEl = measureTable?.querySelector('thead') as HTMLElement | null;
+      const theadH = theadEl ? theadEl.offsetHeight : 30;
+      const footerH = 26;
+      const rowEls = Array.from(measureTable?.querySelectorAll('tbody tr') || []) as HTMLElement[];
+
+      // Kelompokkan baris per halaman agar tidak terpotong di batas bawah halaman
+      const pages: Array<Array<{ row: any; idx: number }>> = [];
+      let currentPageRows: Array<{ row: any; idx: number }> = [];
+      let usedH = headerH + theadH + footerH;
+
+      for (let i = 0; i < rekapRows.length; i++) {
+        const rowH = rowEls[i] ? rowEls[i].offsetHeight : 25;
+        if (currentPageRows.length > 0 && usedH + rowH > innerMaxHeight) {
+          pages.push(currentPageRows);
+          currentPageRows = [{ row: rekapRows[i], idx: i }];
+          usedH = headerH + theadH + footerH + rowH;
+        } else {
+          currentPageRows.push({ row: rekapRows[i], idx: i });
+          usedH += rowH;
+        }
+      }
+      if (currentPageRows.length > 0) {
+        pages.push(currentPageRows);
+      }
+
+      if (measureStage && measureStage.parentNode) {
+        measureStage.parentNode.removeChild(measureStage);
+        measureStage = null;
+      }
+
+      window.scrollTo(0, 0);
+
+      // Tahap 2: Render setiap halaman ke stageContainer dengan rasio persis A4 Landscape (297:210)
+      stageContainer = document.createElement('div');
+      stageContainer.setAttribute('dir', 'ltr');
+      stageContainer.style.position = 'fixed';
+      stageContainer.style.top = '0px';
+      stageContainer.style.left = '0px';
+      stageContainer.style.width = `${stageWidth}px`;
+      stageContainer.style.height = `${pageHeightPx}px`;
+      stageContainer.style.backgroundColor = '#ffffff';
+      stageContainer.style.zIndex = '999999';
+      stageContainer.style.overflow = 'hidden';
+      stageContainer.style.margin = '0';
+      stageContainer.style.padding = '0';
+      stageContainer.style.fontFamily = 'Inter, system-ui, -apple-system, sans-serif';
+      document.body.appendChild(stageContainer);
+
+      let pdfInstance: any = null;
+
+      for (let p = 0; p < pages.length; p++) {
+        stageContainer.innerHTML = '';
+
+        const pageEl = document.createElement('div');
+        pageEl.style.width = `${stageWidth}px`;
+        pageEl.style.height = `${pageHeightPx}px`;
+        pageEl.style.padding = `${padPx}px`;
+        pageEl.style.boxSizing = 'border-box';
+        pageEl.style.backgroundColor = '#ffffff';
+        pageEl.style.color = '#000000';
+        pageEl.style.display = 'flex';
+        pageEl.style.flexDirection = 'column';
+        pageEl.style.justifyContent = 'space-between';
+
+        pageEl.innerHTML = `
+          <div>
+            ${buildHeaderHtml(p + 1, pages.length)}
+            <table style="width:100%;border-collapse:collapse;font-size:9.5px;">
+              ${buildTheadHtml()}
+              <tbody>
+                ${pages[p].map((item) => buildRowHtml(item.row, item.idx)).join('')}
+              </tbody>
+            </table>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:8.5px;color:#64748B;border-top:1px solid #E2E8F0;padding-top:6px;margin-top:8px;">
+            <span>E-Rapor Pesantren • Pondok Pesantren Bali Bina Insani</span>
+            <span>Format A4 Landscape • Halaman ${p + 1} dari ${pages.length}</span>
+          </div>
+        `;
+
+        stageContainer.appendChild(pageEl);
+        await new Promise((r) => setTimeout(r, 180));
+
+        const worker = (html2pdfLib as any)()
+          .set({
+            margin: 0,
+            filename: fileName,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: {
+              scale: 2,
+              useCORS: true,
+              allowTaint: true,
+              backgroundColor: '#ffffff',
+              x: 0,
+              y: 0,
+              scrollX: 0,
+              scrollY: 0,
+              width: stageWidth,
+              height: pageHeightPx,
+              windowWidth: stageWidth,
+              windowHeight: pageHeightPx
+            },
+            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
+            jsPDF: {
+              unit: 'mm',
+              format: 'a4',
+              orientation: 'landscape'
+            }
+          })
+          .from(pageEl);
+
+        const canvas = await worker.toCanvas().get('canvas');
+        const imgData = canvas.toDataURL('image/jpeg', 0.98);
+
+        if (p === 0) {
+          await worker.toPdf();
+          pdfInstance = await worker.get('pdf');
+          while (
+            pdfInstance &&
+            pdfInstance.internal &&
+            pdfInstance.internal.getNumberOfPages &&
+            pdfInstance.internal.getNumberOfPages() > 1
+          ) {
+            pdfInstance.deletePage(pdfInstance.internal.getNumberOfPages());
+          }
+        } else if (pdfInstance) {
+          pdfInstance.addPage('a4', 'landscape');
+          pdfInstance.setPage(pdfInstance.internal.getNumberOfPages());
+          pdfInstance.addImage(imgData, 'JPEG', 0, 0, 297, 210);
+        }
+      }
+
+      if (pdfInstance) {
+        pdfInstance.save(fileName);
+      }
+
+      if (showToast) {
+        showToast(`PDF A4 Landscape (${fileName}) berhasil diunduh!`, 'success');
+      }
+    } catch (err) {
+      if (showToast) {
+        showToast('Gagal membuat PDF Rekap Nilai. Pastikan koneksi internet tersedia.', 'warning');
+      }
+    } finally {
+      if (measureStage && measureStage.parentNode) {
+        measureStage.parentNode.removeChild(measureStage);
+      }
+      if (stageContainer && stageContainer.parentNode) {
+        stageContainer.parentNode.removeChild(stageContainer);
+      }
+      window.scrollTo(prevScrollX, prevScrollY);
+      setIsGeneratingPdf(false);
+    }
+  };
+
   return (
     <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden space-y-4">
       {/* TOOLBAR ATAS: SELECTOR KELAS, SEARCH, INDIKATOR MERAH, TOMBOL AKSI */}
@@ -274,11 +644,32 @@ export function RekapNilaiView({
           <button
             type="button"
             onClick={handleDownloadExcel}
-            className="px-3.5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 active:scale-95 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition"
+            className="px-3.5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 active:scale-95 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer"
             title="Download Rekap Nilai format Excel (.xlsx)"
           >
             <Download className="w-4 h-4" />
             <span>Download Excel</span>
+          </button>
+
+          {/* TOMBOL DOWNLOAD PDF (A4 LANDSCAPE) */}
+          <button
+            type="button"
+            onClick={handleDownloadPdf}
+            disabled={isGeneratingPdf || rekapRows.length === 0}
+            className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition disabled:opacity-50 cursor-pointer"
+            title="Download Rekap Nilai format PDF A4 Landscape"
+          >
+            {isGeneratingPdf ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Membuat PDF...</span>
+              </>
+            ) : (
+              <>
+                <FileText className="w-4 h-4" />
+                <span>Download PDF</span>
+              </>
+            )}
           </button>
 
           <button
