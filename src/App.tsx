@@ -1346,26 +1346,26 @@ export default function App() {
         />
       )}
 
-      {/* SIDEBAR */}
+      {/* SIDEBAR (NEO-BRUTALISM RAPI) */}
       <aside
-        className={`no-print fixed lg:static inset-y-0 left-0 z-50 w-72 lg:w-68 bg-[#064E3B] text-emerald-50 flex flex-col border-r border-[#043d2e] shrink-0 select-none transform transition-transform duration-200 ease-in-out ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        className={`no-print fixed lg:static inset-y-0 left-0 z-50 w-72 lg:w-68 bg-[#064E3B] text-emerald-50 flex flex-col border-r-2 border-slate-900 shrink-0 select-none transform transition-transform duration-200 ease-in-out ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
           }`}
       >
         {/* SIDEBAR HEADER / BRANDING */}
-        <div className="p-4 lg:p-5 border-b border-emerald-900/60 flex items-center justify-between gap-3">
+        <div className="p-4 lg:p-5 border-b-2 border-slate-900/70 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 overflow-hidden">
-            <div className="w-11 h-11 rounded-xl bg-white flex items-center justify-center shadow-md shrink-0 overflow-hidden p-1">
+            <div className="w-11 h-11 rounded-xl bg-white border-2 border-slate-900 flex items-center justify-center shadow-[2px_2px_0px_#0F172A] shrink-0 overflow-hidden p-1">
               <BaliBinaInsaniLogo size={38} customLogoUrl={pondok.logoUrl} />
             </div>
             <div className="overflow-hidden">
-              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-[#244234] text-emerald-300 border border-emerald-700/50 inline-block mb-0.5">
+              <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-[#FDE047] text-slate-950 border-[1.5px] border-slate-900 shadow-[1.5px_1.5px_0px_#0F172A] inline-block mb-1">
                 ADMIN MODE
               </span>
-              <h1 className="font-extrabold text-sm text-white truncate leading-tight">E-Rapor Pesantren</h1>
-              <p className="text-[11px] text-emerald-300 font-arabic truncate" dir="rtl">
+              <h1 className="font-black text-sm text-white truncate leading-tight">E-Rapor Pesantren</h1>
+              <p className="text-[11px] text-emerald-200 font-arabic truncate" dir="rtl">
                 {pondok.namaPondokArab || 'معهد بالي بينا إنساني الإسلامي'}
               </p>
-              <p className="text-[10px] text-emerald-200/70 truncate">
+              <p className="text-[10px] text-emerald-100/80 truncate">
                 Pondok Pesantren Bali Bina Insani
               </p>
             </div>
@@ -1380,14 +1380,14 @@ export default function App() {
         </div>
 
         {/* 5 MAIN MENUS IN SIDEBAR */}
-        <nav className="flex-1 p-3.5 space-y-1.5 overflow-y-auto">
+        <nav className="flex-1 p-3.5 space-y-2 overflow-y-auto">
           {MAIN_NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             const isParentActive = activeMenu === item.id;
             const hasSub = item.subMenus && item.subMenus.length > 0;
 
             return (
-              <div key={item.id} className="space-y-1">
+              <div key={item.id} className="space-y-1.5">
                 <button
                   type="button"
                   onClick={() => {
@@ -1401,14 +1401,14 @@ export default function App() {
                       handleNavigate(item.id);
                     }
                   }}
-                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-left text-xs transition-all ${isParentActive
-                    ? 'bg-[#E6F4EA] text-[#064E3B] font-bold shadow-xs'
-                    : 'text-white/90 hover:bg-emerald-900/50 hover:text-white font-medium'
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-left text-xs transition-all cursor-pointer ${isParentActive
+                    ? 'bg-[#FEF08A] text-slate-950 font-black border-2 border-slate-900 shadow-[3px_3px_0px_#0F172A]'
+                    : 'text-white/90 hover:bg-[#047857]/80 hover:text-white font-bold border-2 border-transparent'
                     }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <Icon
-                      className={`w-4 h-4 shrink-0 ${isParentActive ? 'text-[#064E3B]' : 'text-emerald-300'
+                      className={`w-4 h-4 shrink-0 ${isParentActive ? 'text-slate-950 stroke-[2.5]' : 'text-emerald-300'
                         }`}
                     />
                     <span className="truncate">{item.label}</span>
@@ -1416,15 +1416,15 @@ export default function App() {
 
                   {hasSub && (
                     <ChevronDown
-                      className={`w-3.5 h-3.5 shrink-0 transition-transform duration-200 ${isParentActive ? 'transform rotate-180 text-[#064E3B]' : 'text-emerald-300/70'
+                      className={`w-3.5 h-3.5 shrink-0 transition-transform duration-200 ${isParentActive ? 'transform rotate-180 text-slate-950' : 'text-emerald-300/70'
                         }`}
                     />
                   )}
                 </button>
 
-                {/* EXPANDABLE SUBMENU (Hanya tampil jika menu aktif agar tidak ramai) */}
+                {/* EXPANDABLE SUBMENU */}
                 {hasSub && isParentActive && (
-                  <div className="pl-4 pr-1 py-1 space-y-1 border-l-2 border-emerald-800/80 ml-3">
+                  <div className="pl-3.5 pr-1 py-1 space-y-1.5 border-l-2 border-[#FEF08A]/70 ml-3.5">
                     {item.subMenus.map((sub) => {
                       const SubIcon = sub.icon;
                       const isSubActive = activeSubMenu === sub.id;
@@ -1433,13 +1433,13 @@ export default function App() {
                           key={sub.id}
                           type="button"
                           onClick={() => handleNavigate(item.id, sub.id)}
-                          className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-all text-left ${isSubActive
-                            ? 'bg-emerald-800 text-white font-bold shadow-xs'
-                            : 'text-emerald-200/80 hover:text-white hover:bg-emerald-900/40 font-medium'
+                          className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-all text-left cursor-pointer ${isSubActive
+                            ? 'bg-white text-slate-950 font-black border-2 border-slate-900 shadow-[2px_2px_0px_#0F172A]'
+                            : 'text-emerald-100/85 hover:text-white hover:bg-emerald-800/60 font-semibold border-2 border-transparent'
                             }`}
                         >
                           <SubIcon
-                            className={`w-3.5 h-3.5 shrink-0 ${isSubActive ? 'text-amber-300' : 'text-emerald-400/80'
+                            className={`w-3.5 h-3.5 shrink-0 ${isSubActive ? 'text-slate-950 stroke-[2.5]' : 'text-emerald-300/90'
                               }`}
                           />
                           <span className="truncate">{sub.label}</span>
@@ -1457,9 +1457,9 @@ export default function App() {
         <SidebarMosqueSilhouette />
 
         {/* FOOTER STATUS ADMIN & SUPABASE */}
-        <div className="p-3.5 border-t border-emerald-900/80 bg-emerald-950/95 text-xs text-emerald-300/80 space-y-1.5 relative z-10">
+        <div className="p-3.5 border-t-2 border-slate-900/70 bg-[#043D2E] text-xs text-emerald-200/90 space-y-1.5 relative z-10">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-amber-300 font-medium">
+            <div className="flex items-center gap-1.5 text-[#FDE047] font-bold">
               <CheckCircle2 className="w-3.5 h-3.5" />
               <span>Single-Role Admin</span>
             </div>
@@ -1468,13 +1468,13 @@ export default function App() {
                 setIsMobileSidebarOpen(false);
                 setShowDbModal(true);
               }}
-              className="text-[11px] underline text-emerald-300 hover:text-white"
+              className="text-[11px] font-bold px-2 py-0.5 rounded bg-emerald-900/80 border border-emerald-700 text-emerald-100 hover:bg-[#FEF08A] hover:text-slate-950 hover:border-slate-900 transition cursor-pointer"
             >
               Detail DB
             </button>
           </div>
           <div className="flex items-center gap-1.5 text-[11px]">
-            <Database className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+            <Database className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
             <span className="truncate">
               {dbStatus.state === 'connected'
                 ? 'Supabase PostgreSQL Aktif'
@@ -1489,24 +1489,24 @@ export default function App() {
       {/* MAIN CONTENT AREA */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#F8FAFC]">
         {/* HEADER DASHBOARD */}
-        <header className="no-print bg-white border-b border-slate-200/90 px-4 sm:px-6 py-3.5 flex items-center justify-between sticky top-0 z-30 shadow-xs relative overflow-hidden">
+        <header className="no-print bg-white border-b-2 border-slate-900 px-4 sm:px-6 py-3.5 flex items-center justify-between sticky top-0 z-30 relative overflow-hidden">
           <HeaderIslamicPattern />
 
           <div className="flex items-center gap-3 min-w-0 relative z-10">
             <button
               type="button"
               onClick={() => setIsMobileSidebarOpen(true)}
-              className="lg:hidden p-2 rounded-xl bg-emerald-950 text-white hover:bg-emerald-900 shrink-0"
+              className="lg:hidden p-2 rounded-xl bg-[#FEF08A] text-slate-950 border-2 border-slate-900 shadow-[2px_2px_0px_#0F172A] shrink-0"
               aria-label="Buka Menu"
             >
               <Menu className="w-5 h-5" />
             </button>
 
             <div className="min-w-0">
-              <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight truncate leading-tight">
+              <h2 className="text-xl sm:text-2xl font-black text-slate-950 tracking-tight truncate leading-tight">
                 {headerMeta.title}
               </h2>
-              <p className="text-xs text-slate-500 truncate hidden sm:block">
+              <p className="text-xs font-medium text-slate-600 truncate hidden sm:block">
                 {headerMeta.subtitle}
               </p>
             </div>
@@ -1521,13 +1521,13 @@ export default function App() {
                   setShowYearPicker(!showYearPicker);
                   setShowProfileMenu(false);
                 }}
-                className="flex items-center gap-2 px-3 sm:px-3.5 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs font-semibold text-slate-800 transition shadow-2xs"
+                className="flex items-center gap-2 px-3 sm:px-3.5 py-2 rounded-xl bg-[#FEF9C3] hover:bg-[#FEF08A] border-2 border-slate-900 text-xs font-extrabold text-slate-950 shadow-[2px_2px_0px_#0F172A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer"
               >
-                <Calendar className="w-4 h-4 text-emerald-700 shrink-0" />
+                <Calendar className="w-4 h-4 text-slate-900 shrink-0" />
                 <span className="truncate max-w-[140px] sm:max-w-none">
                   {currentSelectedTA?.nama || '2026 – 2027'} • {currentSelectedSemester?.nama || 'Ganjil'}
                 </span>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <ChevronDown className="w-3.5 h-3.5 text-slate-700 shrink-0" />
               </button>
 
               {/* DROPDOWN PEMILIHAN TAHUN AJARAN & SEMESTER */}
@@ -1614,16 +1614,16 @@ export default function App() {
                   setShowProfileMenu(!showProfileMenu);
                   setShowYearPicker(false);
                 }}
-                className="flex items-center gap-2 sm:gap-2.5 px-3 sm:px-3.5 py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 transition shadow-2xs"
+                className="flex items-center gap-2 sm:gap-2.5 px-3 sm:px-3.5 py-1.5 rounded-xl bg-[#D1FAE5] hover:bg-[#A7F3D0] border-2 border-slate-900 shadow-[2px_2px_0px_#0F172A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer"
               >
-                <div className="w-7 h-7 rounded-full bg-emerald-700 text-white flex items-center justify-center shrink-0 font-bold text-xs">
+                <div className="w-7 h-7 rounded-lg bg-[#064E3B] border-[1.5px] border-slate-900 text-white flex items-center justify-center shrink-0 font-bold text-xs">
                   <User className="w-4 h-4" />
                 </div>
                 <div className="text-left hidden sm:block">
-                  <div className="text-xs font-bold text-slate-900 leading-tight">Admin</div>
-                  <div className="text-[10px] text-slate-500 leading-tight">Operator Pesantren</div>
+                  <div className="text-xs font-black text-slate-950 leading-tight">Admin</div>
+                  <div className="text-[10px] font-semibold text-slate-700 leading-tight">Operator Pesantren</div>
                 </div>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <ChevronDown className="w-3.5 h-3.5 text-slate-800 shrink-0" />
               </button>
 
               {/* DROPDOWN PROFIL ADMIN */}
