@@ -340,9 +340,9 @@ export function RekapNilaiView({
           .set({
             margin: 0,
             filename: fileName,
-            image: { type: 'jpeg', quality: 0.98 },
+            image: { type: 'png', quality: 1 },
             html2canvas: {
-              scale: 2,
+              scale: 3,
               useCORS: true,
               allowTaint: true,
               backgroundColor: '#ffffff',
@@ -365,7 +365,7 @@ export function RekapNilaiView({
           .from(pageEl);
 
         const canvas = await worker.toCanvas().get('canvas');
-        const imgData = canvas.toDataURL('image/jpeg', 0.98);
+        const imgData = canvas.toDataURL('image/png');
 
         if (p === 0) {
           await worker.toPdf();
@@ -382,12 +382,12 @@ export function RekapNilaiView({
             pdfInstance.addPage([330, 215], 'landscape');
             pdfInstance.deletePage(1);
             pdfInstance.setPage(1);
-            pdfInstance.addImage(imgData, 'JPEG', 0, 0, 330, 215);
+            pdfInstance.addImage(imgData, 'PNG', 0, 0, 330, 215, undefined, 'FAST');
           }
         } else if (pdfInstance) {
           pdfInstance.addPage([330, 215], 'landscape');
           pdfInstance.setPage(pdfInstance.internal.getNumberOfPages());
-          pdfInstance.addImage(imgData, 'JPEG', 0, 0, 330, 215);
+          pdfInstance.addImage(imgData, 'PNG', 0, 0, 330, 215, undefined, 'FAST');
         }
       }
 
@@ -472,17 +472,17 @@ export function RekapNilaiView({
             <div style="font-size:15px;font-weight:900;color:#991B1B;letter-spacing:0.2px;line-height:1.2;">
               REKAP SANTRI NILAI DHOIF &amp; KOSONG — ${escapeHtml(kelasLabel.toUpperCase())}
             </div>
-            <div style="font-size:10px;color:#334155;margin-top:2px;font-weight:600;">
+            <div style="font-size:10px;color:#0F172A;margin-top:2px;font-weight:600;">
               Pondok Pesantren Bali Bina Insani • Periode: ${escapeHtml(taNama)} (${escapeHtml(semNama)})${escapeHtml(waliInfo)} • Santri Bermasalah: ${dhoifKosongRows.length} dari ${totalSantriDiRekap} Santri
             </div>
           </div>
           <div style="text-align:right;flex-shrink:0;">
-            <div style="display:inline-flex;align-items:center;gap:8px;padding:3px 9px;border-radius:6px;background:#FEF2F2;border:1px solid #FECACA;color:#B91C1C;font-size:9px;font-weight:700;">
+            <div style="display:inline-flex;align-items:center;gap:8px;padding:3px 9px;border-radius:6px;background:#FEE2E2;border:1px solid #EF4444;color:#991B1B;font-size:9px;font-weight:800;">
               <span>Dhoif (&lt; 2.70): ${totalDhoif}</span>
               <span>•</span>
               <span>Kosong: ${totalKosong}</span>
             </div>
-            <div style="font-size:9px;color:#64748B;margin-top:3px;font-weight:600;">
+            <div style="font-size:9px;color:#334155;margin-top:3px;font-weight:700;">
               Halaman ${pageNum} dari ${totalPages}
             </div>
           </div>
@@ -490,14 +490,14 @@ export function RekapNilaiView({
       `,
       buildTheadHtml: () => `
         <thead>
-          <tr style="background:#EEF2F6;color:#1E293B;font-size:9.5px;">
-            <th style="padding:6px 5px;text-align:center;border:1px solid #CBD5E1;font-weight:800;">No</th>
-            <th style="padding:6px 8px;text-align:left;border:1px solid #CBD5E1;font-weight:800;">Nama Santri</th>
-            <th style="padding:6px 5px;text-align:center;border:1px solid #CBD5E1;font-weight:800;">Kelas</th>
-            <th style="padding:6px 5px;text-align:center;border:1px solid #CBD5E1;font-weight:800;background:#FEE2E2;color:#991B1B;">Jml Dhoif</th>
-            <th style="padding:6px 5px;text-align:center;border:1px solid #CBD5E1;font-weight:800;background:#FEF3C7;color:#92400E;">Jml Kosong</th>
-            <th style="padding:6px 8px;text-align:left;border:1px solid #CBD5E1;font-weight:800;background:#FEF2F2;color:#991B1B;">Daftar Mapel Nilai Dhoif (&lt; 2.70)</th>
-            <th style="padding:6px 8px;text-align:left;border:1px solid #CBD5E1;font-weight:800;background:#FFFBEB;color:#92400E;">Daftar Mapel Nilai Kosong (Belum Dinilai)</th>
+          <tr style="background:#E2E8F0;color:#0F172A;font-size:9.5px;">
+            <th style="padding:6px 5px;text-align:center;border:1px solid #94A3B8;font-weight:800;">No</th>
+            <th style="padding:6px 8px;text-align:left;border:1px solid #94A3B8;font-weight:800;">Nama Santri</th>
+            <th style="padding:6px 5px;text-align:center;border:1px solid #94A3B8;font-weight:800;">Kelas</th>
+            <th style="padding:6px 5px;text-align:center;border:1px solid #94A3B8;font-weight:800;background:#FECACA;color:#7F1D1D;">Jml Dhoif</th>
+            <th style="padding:6px 5px;text-align:center;border:1px solid #94A3B8;font-weight:800;background:#FDE68A;color:#78350F;">Jml Kosong</th>
+            <th style="padding:6px 8px;text-align:left;border:1px solid #94A3B8;font-weight:800;background:#FEE2E2;color:#7F1D1D;">Daftar Mapel Nilai Dhoif (&lt; 2.70)</th>
+            <th style="padding:6px 8px;text-align:left;border:1px solid #94A3B8;font-weight:800;background:#FEF3C7;color:#78350F;">Daftar Mapel Nilai Kosong (Belum Dinilai)</th>
           </tr>
         </thead>
       `,
@@ -518,20 +518,20 @@ export function RekapNilaiView({
 
         return `
           <tr style="font-size:9.5px;">
-            <td style="padding:5px;text-align:center;border:1px solid #CBD5E1;color:#475569;background:#F8FAFC;white-space:nowrap;">${idx + 1}</td>
-            <td style="padding:5px 8px;text-align:left;border:1px solid #CBD5E1;font-weight:800;color:#0F172A;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(row.santri.namaLengkap)}</td>
-            <td style="padding:5px;text-align:center;border:1px solid #CBD5E1;font-weight:700;color:#334155;white-space:nowrap;">${escapeHtml(row.namaKelas)}</td>
-            <td style="padding:5px;text-align:center;border:1px solid #CBD5E1;font-weight:800;white-space:nowrap;${
-              row.dhoifCount > 0 ? 'background:#EF4444;color:#FFFFFF;' : 'background:#FFFFFF;color:#94A3B8;'
+            <td style="padding:5px;text-align:center;border:1px solid #94A3B8;color:#0F172A;background:#F1F5F9;font-weight:600;white-space:nowrap;">${idx + 1}</td>
+            <td style="padding:5px 8px;text-align:left;border:1px solid #94A3B8;font-weight:800;color:#000000;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(row.santri.namaLengkap)}</td>
+            <td style="padding:5px;text-align:center;border:1px solid #94A3B8;font-weight:700;color:#0F172A;white-space:nowrap;">${escapeHtml(row.namaKelas)}</td>
+            <td style="padding:5px;text-align:center;border:1px solid #94A3B8;font-weight:800;white-space:nowrap;${
+              row.dhoifCount > 0 ? 'background:#DC2626;color:#FFFFFF;' : 'background:#FFFFFF;color:#64748B;'
             }">${row.dhoifCount}</td>
-            <td style="padding:5px;text-align:center;border:1px solid #CBD5E1;font-weight:800;white-space:nowrap;${
-              row.kosongCount > 0 ? 'background:#FEF3C7;color:#92400E;' : 'background:#FFFFFF;color:#94A3B8;'
+            <td style="padding:5px;text-align:center;border:1px solid #94A3B8;font-weight:800;white-space:nowrap;${
+              row.kosongCount > 0 ? 'background:#FDE68A;color:#78350F;' : 'background:#FFFFFF;color:#64748B;'
             }">${row.kosongCount}</td>
-            <td style="padding:5px 8px;text-align:left;border:1px solid #CBD5E1;color:#991B1B;line-height:1.3;word-break:break-word;${
-              dhoifMapels.length > 0 ? 'background:#FEF2F2;font-weight:600;' : 'background:#FFFFFF;color:#94A3B8;'
+            <td style="padding:5px 8px;text-align:left;border:1px solid #94A3B8;color:#7F1D1D;line-height:1.3;word-break:break-word;${
+              dhoifMapels.length > 0 ? 'background:#FEE2E2;font-weight:700;' : 'background:#FFFFFF;color:#64748B;'
             }">${dhoifMapels.length > 0 ? escapeHtml(dhoifMapels.join(', ')) : '—'}</td>
-            <td style="padding:5px 8px;text-align:left;border:1px solid #CBD5E1;color:#92400E;line-height:1.3;word-break:break-word;${
-              kosongMapels.length > 0 ? 'background:#FFFBEB;font-weight:600;' : 'background:#FFFFFF;color:#94A3B8;'
+            <td style="padding:5px 8px;text-align:left;border:1px solid #94A3B8;color:#78350F;line-height:1.3;word-break:break-word;${
+              kosongMapels.length > 0 ? 'background:#FEF3C7;font-weight:700;' : 'background:#FFFFFF;color:#64748B;'
             }">${kosongMapels.length > 0 ? escapeHtml(kosongMapels.join(', ')) : '—'}</td>
           </tr>
         `;
@@ -616,24 +616,24 @@ export function RekapNilaiView({
         </colgroup>
       `,
       buildHeaderHtml: (pageNum, totalPages) => `
-        <div style="margin-bottom:8px;border-bottom:2px solid #064E3B;padding-bottom:6px;display:flex;justify-content:space-between;align-items:flex-end;gap:12px;">
+        <div style="margin-bottom:8px;border-bottom:2px solid #065F46;padding-bottom:6px;display:flex;justify-content:space-between;align-items:flex-end;gap:12px;">
           <div style="min-width:0;flex:1;">
-            <div style="font-size:15px;font-weight:900;color:#064E3B;letter-spacing:0.2px;line-height:1.2;">
+            <div style="font-size:15px;font-weight:900;color:#065F46;letter-spacing:0.2px;line-height:1.2;">
               REKAPITULASI NILAI SANTRI — ${escapeHtml(kelasLabel.toUpperCase())}
             </div>
-            <div style="font-size:10px;color:#334155;margin-top:2px;font-weight:600;">
+            <div style="font-size:10px;color:#0F172A;margin-top:2px;font-weight:600;">
               Pondok Pesantren Bali Bina Insani • Periode: ${escapeHtml(taNama)} (${escapeHtml(semNama)})${escapeHtml(waliInfo)} • Total: ${totalSantriDiRekap} Santri
             </div>
-            <div style="font-size:9px;color:#475569;margin-top:2px;line-height:1.25;">
+            <div style="font-size:9px;color:#1E293B;margin-top:2px;line-height:1.25;">
               <strong>Mata Pelajaran (${activeMapelFiltered.length}):</strong> ${escapeHtml(mapelLabelRaw)}
             </div>
           </div>
           <div style="text-align:right;flex-shrink:0;">
-            <div style="display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:6px;background:#FEF2F2;border:1px solid #FECACA;color:#B91C1C;font-size:9px;font-weight:700;">
+            <div style="display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:6px;background:#FEE2E2;border:1px solid #EF4444;color:#991B1B;font-size:9px;font-weight:800;">
               <span style="display:inline-block;width:7px;height:7px;border-radius:999px;background:#DC2626;"></span>
               Merah = Dhoif (&lt; 2.70) / Kosong
             </div>
-            <div style="font-size:9px;color:#64748B;margin-top:3px;font-weight:600;">
+            <div style="font-size:9px;color:#334155;margin-top:3px;font-weight:700;">
               Halaman ${pageNum} dari ${totalPages}
             </div>
           </div>
@@ -641,14 +641,14 @@ export function RekapNilaiView({
       `,
       buildTheadHtml: () => `
         <thead>
-          <tr style="background:#EEF2F6;color:#1E293B;font-size:${headerFontSize}px;">
-            <th rowspan="2" style="padding:${cellPad};text-align:center;border:1px solid #CBD5E1;font-weight:800;vertical-align:middle;">No</th>
-            <th rowspan="2" style="padding:${cellPad};text-align:left;border:1px solid #CBD5E1;font-weight:800;vertical-align:middle;">NAMA</th>
-            <th rowspan="2" style="padding:${cellPad};text-align:center;border:1px solid #CBD5E1;font-weight:800;vertical-align:middle;">Kelas</th>
+          <tr style="background:#E2E8F0;color:#0F172A;font-size:${headerFontSize}px;">
+            <th rowspan="2" style="padding:${cellPad};text-align:center;border:1px solid #94A3B8;font-weight:800;vertical-align:middle;">No</th>
+            <th rowspan="2" style="padding:${cellPad};text-align:left;border:1px solid #94A3B8;font-weight:800;vertical-align:middle;">NAMA</th>
+            <th rowspan="2" style="padding:${cellPad};text-align:center;border:1px solid #94A3B8;font-weight:800;vertical-align:middle;">Kelas</th>
             ${activeMapelFiltered
           .map(
             (mp) => `
-              <th colspan="2" style="padding:4px 4px;text-align:center;border:1px solid #CBD5E1;font-weight:800;background:#E6EFF8;color:#0F172A;line-height:1.2;vertical-align:middle;font-size:${mapelCount >= 8 ? 7.2 : headerFontSize}px;overflow:hidden;">
+              <th colspan="2" style="padding:4px 4px;text-align:center;border:1px solid #94A3B8;font-weight:800;background:#DBEAFE;color:#0F172A;line-height:1.2;vertical-align:middle;font-size:${mapelCount >= 8 ? 7.2 : headerFontSize}px;overflow:hidden;">
                 <div style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word;">
                   ${escapeHtml(String(mp.namaLatin || '').replace(/\//g, ' / '))}${mp.masukRapor === false ? ' <span style="font-size:7px;color:#92400E;">(Rekap)</span>' : ''}
                 </div>
@@ -656,16 +656,16 @@ export function RekapNilaiView({
             `
           )
           .join('')}
-            <th rowspan="2" style="padding:${cellPad};text-align:center;border:1px solid #CBD5E1;font-weight:800;background:#E2E8F0;color:#0F172A;vertical-align:middle;">Jumlah</th>
-            <th rowspan="2" style="padding:${cellPad};text-align:center;border:1px solid #CBD5E1;font-weight:800;background:#E2E8F0;color:#0F172A;vertical-align:middle;">Rata-rata</th>
-            <th rowspan="2" style="padding:${cellPad};text-align:center;border:1px solid #CBD5E1;font-weight:800;background:#FEF3C7;color:#78350F;vertical-align:middle;">Peringkat</th>
+            <th rowspan="2" style="padding:${cellPad};text-align:center;border:1px solid #94A3B8;font-weight:800;background:#CBD5E1;color:#0F172A;vertical-align:middle;">Jumlah</th>
+            <th rowspan="2" style="padding:${cellPad};text-align:center;border:1px solid #94A3B8;font-weight:800;background:#CBD5E1;color:#0F172A;vertical-align:middle;">Rata-rata</th>
+            <th rowspan="2" style="padding:${cellPad};text-align:center;border:1px solid #94A3B8;font-weight:800;background:#FDE68A;color:#78350F;vertical-align:middle;">Peringkat</th>
           </tr>
-          <tr style="background:#F8FAFC;color:#475569;font-size:${Math.max(headerFontSize - 0.5, 7)}px;">
+          <tr style="background:#F1F5F9;color:#1E293B;font-size:${Math.max(headerFontSize - 0.5, 7)}px;">
             ${activeMapelFiltered
           .map(
             () => `
-              <th style="padding:3px 2px;text-align:center;border:1px solid #CBD5E1;font-weight:700;background:#EFF6FF;color:#1E3A8A;">Nilai</th>
-              <th style="padding:3px 2px;text-align:center;border:1px solid #CBD5E1;font-weight:700;background:#F1F5F9;color:#475569;">Predikat</th>
+              <th style="padding:3px 2px;text-align:center;border:1px solid #94A3B8;font-weight:700;background:#EFF6FF;color:#1E3A8A;">Nilai</th>
+              <th style="padding:3px 2px;text-align:center;border:1px solid #94A3B8;font-weight:700;background:#E2E8F0;color:#1E293B;">Predikat</th>
             `
           )
           .join('')}
@@ -676,9 +676,9 @@ export function RekapNilaiView({
         const row = rekapRows[idx];
         return `
           <tr style="font-size:${baseFontSize}px;">
-            <td style="padding:${cellPad};text-align:center;border:1px solid #CBD5E1;color:#475569;background:#F8FAFC;white-space:nowrap;">${idx + 1}</td>
-            <td style="padding:${cellPad};text-align:left;border:1px solid #CBD5E1;font-weight:800;color:#0F172A;text-transform:uppercase;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(row.santri.namaLengkap)}</td>
-            <td style="padding:${cellPad};text-align:center;border:1px solid #CBD5E1;font-weight:700;color:#334155;white-space:nowrap;">${escapeHtml(row.namaKelas)}</td>
+            <td style="padding:${cellPad};text-align:center;border:1px solid #94A3B8;color:#0F172A;background:#F1F5F9;font-weight:600;white-space:nowrap;">${idx + 1}</td>
+            <td style="padding:${cellPad};text-align:left;border:1px solid #94A3B8;font-weight:800;color:#000000;text-transform:uppercase;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(row.santri.namaLengkap)}</td>
+            <td style="padding:${cellPad};text-align:center;border:1px solid #94A3B8;font-weight:700;color:#0F172A;white-space:nowrap;">${escapeHtml(row.namaKelas)}</td>
             ${activeMapelFiltered
             .map((mp) => {
               const sc = row.mapelScores[mp.id];
@@ -692,13 +692,13 @@ export function RekapNilaiView({
               const predDisplay = sc && sc.isFilled ? sc.predikatLatin : 'Kosong';
 
               const scoreStyle = isRed
-                ? 'background:#EF4444;color:#FFFFFF;border:1px solid #DC2626;'
-                : 'background:#FFFFFF;color:#1E293B;border:1px solid #CBD5E1;';
+                ? 'background:#DC2626;color:#FFFFFF;border:1px solid #991B1B;'
+                : 'background:#FFFFFF;color:#000000;border:1px solid #94A3B8;';
               const predStyle = sc?.isKosong
-                ? 'background:#FEF2F2;color:#DC2626;border:1px solid #CBD5E1;font-weight:600;font-style:italic;'
+                ? 'background:#FEE2E2;color:#991B1B;border:1px solid #94A3B8;font-weight:700;font-style:italic;'
                 : sc?.isDhoif
-                  ? 'background:#FEF2F2;color:#B91C1C;border:1px solid #CBD5E1;font-weight:700;'
-                  : 'background:#FFFFFF;color:#334155;border:1px solid #CBD5E1;';
+                  ? 'background:#FEE2E2;color:#991B1B;border:1px solid #94A3B8;font-weight:800;'
+                  : 'background:#FFFFFF;color:#0F172A;border:1px solid #94A3B8;';
 
               return `
                 <td style="padding:${cellPad};text-align:center;font-family:monospace;font-weight:800;white-space:nowrap;${scoreStyle}">${escapeHtml(valDisplay)}</td>
@@ -706,17 +706,17 @@ export function RekapNilaiView({
               `;
             })
             .join('')}
-            <td style="padding:${cellPad};text-align:center;border:1px solid #CBD5E1;font-family:monospace;font-weight:800;color:#0F172A;background:#F8FAFC;white-space:nowrap;">
+            <td style="padding:${cellPad};text-align:center;border:1px solid #94A3B8;font-family:monospace;font-weight:800;color:#000000;background:#F1F5F9;white-space:nowrap;">
               ${row.filledCount > 0 ? row.totalScore.toFixed(2) : '—'}
             </td>
-            <td style="padding:${cellPad};text-align:center;border:1px solid #CBD5E1;font-family:monospace;font-weight:800;white-space:nowrap;${
+            <td style="padding:${cellPad};text-align:center;border:1px solid #94A3B8;font-family:monospace;font-weight:800;white-space:nowrap;${
               row.filledCount > 0 && row.averageScore < 2.7
-                ? 'background:#FEE2E2;color:#991B1B;border-color:#FCA5A5;'
-                : 'background:#F8FAFC;color:#064E3B;'
+                ? 'background:#FECACA;color:#7F1D1D;border-color:#EF4444;'
+                : 'background:#F1F5F9;color:#065F46;'
             }">
               ${row.filledCount > 0 ? row.averageScore.toFixed(2) : '—'}
             </td>
-            <td style="padding:${cellPad};text-align:center;border:1px solid #CBD5E1;font-weight:800;color:#0F172A;background:#FFFBEB;white-space:nowrap;">
+            <td style="padding:${cellPad};text-align:center;border:1px solid #94A3B8;font-weight:800;color:#000000;background:#FEF3C7;white-space:nowrap;">
               ${escapeHtml(row.rank)}
             </td>
           </tr>
