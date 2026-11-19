@@ -168,258 +168,147 @@ export function RekapNilaiView({
       document.head.appendChild(script);
     });
 
-  const escapeHtml = (str: any) =>
-    String(str ?? '')
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-
   const sanitizeFilePart = (str: string) =>
     String(str || '')
       .replace(/[\\/:*?"<>|]/g, '-')
       .replace(/\s+/g, ' ')
       .trim();
 
-  // Helper bersama untuk render PDF F4 Landscape (330 x 215 mm) dengan paginasi anti-tumpang-tindih
-  const renderF4LandscapePdf = async ({
-    fileName,
-    rowsCount,
-    buildHeaderHtml,
-    buildFooterHtml,
-    buildColgroupHtml,
-    buildTheadHtml,
-    buildRowHtml,
-    setLoading,
-    startToast,
-    successToast
-  }: {
-    fileName: string;
-    rowsCount: number;
-    buildHeaderHtml: (pageNum: number, totalPages: number) => string;
-    buildFooterHtml: (pageNum: number, totalPages: number) => string;
-    buildColgroupHtml: () => string;
-    buildTheadHtml: () => string;
-    buildRowHtml: (idx: number) => string;
-    setLoading: (val: boolean) => void;
-    startToast: string;
-    successToast: string;
-  }) => {
-    setLoading(true);
-    if (showToast) showToast(startToast);
+  // Ambil constructor jsPDF langsung dari bundle tanpa html2canvas (instan & 100% vektor tajam)
+  const getJsPdfInstance = async (): Promise<any> => {
+    await loadHtml2PdfScript();
+    const win = window as any;
+    const JsPDFCtor = win.jspdf?.jsPDF || win.jsPDF;
+    if (typeof JsPDFCtor === 'function') {
+      return new JsPDFCtor({
+        unit: 'mm',
+        format: [330, 215],
+        orientation: 'landscape',
+        compress: true
+      });
+    }
+    const html2pdfLib = win.html2pdf;
+    const tempEl = document.createElement('div');
+    return await html2pdfLib()
+      .set({ jsPDF: { unit: 'mm', format: [330, 215], orientation: 'landscape' } })
+      .from(tempEl)
+      .toPdf()
+      .get('pdf');
+  };
 
-    let measureStage: HTMLElement | null = null;
-    let stageContainer: HTMLElement | null = null;
-    const prevScrollX = window.scrollX;
-    const prevScrollY = window.scrollY;
+  type RGB = [number, number, number];
 
-    // Ukuran pas F4 Landscape (330mm x 215mm pada 96dpi) dengan margin 26px di semua sisi
-    const stageWidth = 1247;
-    const pageHeightPx = 813;
-    const padPx = 26;
-    const innerWidth = stageWidth - padPx * 2; // 1195px
-    const innerMaxHeight = pageHeightPx - padPx * 2; // 761px
+  const fitSingleLineText = (doc: any, text: string, maxW: number): string => {
+    const raw = String(text ?? '');
+    if (maxW <= 2) return '';
+    if (doc.getTextWidth(raw) <= maxW) return raw;
+    let end = raw.length;
+    while (end > 1 && doc.getTextWidth(raw.slice(0, end) + '...') > maxW) {
+      end -= 1;
+    }
+    return raw.slice(0, Math.max(1, end)) + '...';
+  };
 
-    try {
-      const html2pdfLib: any = await loadHtml2PdfScript();
-      if (document.fonts && document.fonts.ready) {
-        await document.fonts.ready;
-      }
+  const drawPdfCell = (
+    doc: any,
+    {
+      x,
+      y,
+      w,
+      h,
+      text,
+      align = 'center',
+      fillRgb,
+      textRgb = [0, 0, 0],
+      borderRgb = [148, 163, 184],
+      fontStyle = 'normal',
+      fontSize = 8,
+      padX = 1.5,
+      wrap = false,
+      maxLines = 2
+    }: {
+      x: number;
+      y: number;
+      w: number;
+      h: number;
+      text: string;
+      align?: 'left' | 'center' | 'right';
+      fillRgb?: RGB;
+      textRgb?: RGB;
+      borderRgb?: RGB;
+      fontStyle?: 'normal' | 'bold' | 'italic';
+      fontSize?: number;
+      padX?: number;
+      wrap?: boolean;
+      maxLines?: number;
+    }
+  ) => {
+    if (fillRgb) {
+      doc.setFillColor(fillRgb[0], fillRgb[1], fillRgb[2]);
+      doc.rect(x, y, w, h, 'F');
+    }
+    if (borderRgb) {
+      doc.setDrawColor(borderRgb[0], borderRgb[1], borderRgb[2]);
+      doc.setLineWidth(0.2);
+      doc.rect(x, y, w, h, 'S');
+    }
 
-      // Tahap 1: Ukur tinggi header, thead, footer, dan tiap baris pada lebar 1195px
-      measureStage = document.createElement('div');
-      measureStage.style.position = 'fixed';
-      measureStage.style.top = '0px';
-      measureStage.style.left = '0px';
-      measureStage.style.width = `${innerWidth}px`;
-      measureStage.style.visibility = 'hidden';
-      measureStage.style.pointerEvents = 'none';
-      measureStage.style.fontFamily = 'Inter, system-ui, -apple-system, sans-serif';
-      measureStage.innerHTML = `
-        <div id="pdf-measure-header" style="width:${innerWidth}px;">${buildHeaderHtml(1, 1)}</div>
-        <table id="pdf-measure-table" style="border-collapse:collapse;table-layout:fixed;width:${innerWidth}px;">
-          ${buildColgroupHtml()}
-          ${buildTheadHtml()}
-          <tbody>
-            ${Array.from({ length: rowsCount }, (_, idx) => buildRowHtml(idx)).join('')}
-          </tbody>
-        </table>
-        <div id="pdf-measure-footer" style="width:${innerWidth}px;">${buildFooterHtml(1, 1)}</div>
-      `;
-      document.body.appendChild(measureStage);
+    doc.setFont('helvetica', fontStyle);
+    doc.setFontSize(fontSize);
+    doc.setTextColor(textRgb[0], textRgb[1], textRgb[2]);
 
-      const measureTable = measureStage.querySelector('#pdf-measure-table') as HTMLElement;
-      const measureHeader = measureStage.querySelector('#pdf-measure-header') as HTMLElement;
-      const measureFooter = measureStage.querySelector('#pdf-measure-footer') as HTMLElement;
+    const usableW = Math.max(w - padX * 2, 2);
+    let lines: string[];
+    if (wrap) {
+      const split: string[] = doc.splitTextToSize(String(text ?? ''), usableW);
+      lines = maxLines > 0 ? split.slice(0, maxLines) : split;
+    } else {
+      lines = [fitSingleLineText(doc, String(text ?? ''), usableW)];
+    }
 
-      const headerH = measureHeader ? measureHeader.offsetHeight + 8 : 72;
-      const theadEl = measureTable?.querySelector('thead') as HTMLElement | null;
-      const theadH = theadEl ? theadEl.offsetHeight : 44;
-      const footerH = measureFooter ? measureFooter.offsetHeight + 6 : 26;
-      const safeBottomMargin = 6;
-      const maxContentHeight = innerMaxHeight - safeBottomMargin; // 755px
-      const rowEls = Array.from(measureTable?.querySelectorAll('tbody tr') || []) as HTMLElement[];
+    const lineHeightMm = fontSize * 0.42;
+    const totalTextH = lines.length * lineHeightMm;
+    const firstLineY = y + (h - totalTextH) / 2 + fontSize * 0.31;
+    const textX = align === 'left' ? x + padX : align === 'right' ? x + w - padX : x + w / 2;
 
-      const pages: number[][] = [];
-      let currentPageIndices: number[] = [];
-      let usedH = headerH + theadH + footerH;
-
-      for (let i = 0; i < rowsCount; i++) {
-        const rowH = rowEls[i] ? rowEls[i].offsetHeight : 24;
-        if (currentPageIndices.length > 0 && usedH + rowH > maxContentHeight) {
-          pages.push(currentPageIndices);
-          currentPageIndices = [i];
-          usedH = headerH + theadH + footerH + rowH;
-        } else {
-          currentPageIndices.push(i);
-          usedH += rowH;
-        }
-      }
-      if (currentPageIndices.length > 0) {
-        pages.push(currentPageIndices);
-      }
-
-      if (measureStage && measureStage.parentNode) {
-        measureStage.parentNode.removeChild(measureStage);
-        measureStage = null;
-      }
-
-      window.scrollTo(0, 0);
-
-      // Tahap 2: Render setiap halaman ke stageContainer 1247x813px (rasio persis F4 Landscape 330:215)
-      stageContainer = document.createElement('div');
-      stageContainer.setAttribute('dir', 'ltr');
-      stageContainer.style.position = 'fixed';
-      stageContainer.style.top = '0px';
-      stageContainer.style.left = '0px';
-      stageContainer.style.width = `${stageWidth}px`;
-      stageContainer.style.height = `${pageHeightPx}px`;
-      stageContainer.style.backgroundColor = '#ffffff';
-      stageContainer.style.zIndex = '999999';
-      stageContainer.style.overflow = 'hidden';
-      stageContainer.style.margin = '0';
-      stageContainer.style.padding = '0';
-      stageContainer.style.fontFamily = 'Inter, system-ui, -apple-system, sans-serif';
-      document.body.appendChild(stageContainer);
-
-      let pdfInstance: any = null;
-
-      for (let p = 0; p < pages.length; p++) {
-        stageContainer.innerHTML = '';
-
-        const pageEl = document.createElement('div');
-        pageEl.style.width = `${stageWidth}px`;
-        pageEl.style.height = `${pageHeightPx}px`;
-        pageEl.style.padding = `${padPx}px`;
-        pageEl.style.boxSizing = 'border-box';
-        pageEl.style.backgroundColor = '#ffffff';
-        pageEl.style.color = '#000000';
-        pageEl.style.display = 'flex';
-        pageEl.style.flexDirection = 'column';
-        pageEl.style.justifyContent = 'space-between';
-
-        pageEl.innerHTML = `
-          <div>
-            ${buildHeaderHtml(p + 1, pages.length)}
-            <table style="width:${innerWidth}px;table-layout:fixed;border-collapse:collapse;">
-              ${buildColgroupHtml()}
-              ${buildTheadHtml()}
-              <tbody>
-                ${pages[p].map((idx) => buildRowHtml(idx)).join('')}
-              </tbody>
-            </table>
-          </div>
-          ${buildFooterHtml(p + 1, pages.length)}
-        `;
-
-        stageContainer.appendChild(pageEl);
-        await new Promise((r) => setTimeout(r, 180));
-
-        const worker = (html2pdfLib as any)()
-          .set({
-            margin: 0,
-            filename: fileName,
-            image: { type: 'png', quality: 1 },
-            html2canvas: {
-              scale: 3,
-              useCORS: true,
-              allowTaint: true,
-              backgroundColor: '#ffffff',
-              x: 0,
-              y: 0,
-              scrollX: 0,
-              scrollY: 0,
-              width: stageWidth,
-              height: pageHeightPx,
-              windowWidth: stageWidth,
-              windowHeight: pageHeightPx
-            },
-            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
-            jsPDF: {
-              unit: 'mm',
-              format: [330, 215],
-              orientation: 'landscape'
-            }
-          })
-          .from(pageEl);
-
-        const canvas = await worker.toCanvas().get('canvas');
-        const imgData = canvas.toDataURL('image/png');
-
-        if (p === 0) {
-          await worker.toPdf();
-          pdfInstance = await worker.get('pdf');
-          while (
-            pdfInstance &&
-            pdfInstance.internal &&
-            pdfInstance.internal.getNumberOfPages &&
-            pdfInstance.internal.getNumberOfPages() > 1
-          ) {
-            pdfInstance.deletePage(pdfInstance.internal.getNumberOfPages());
-          }
-          if (pdfInstance) {
-            pdfInstance.addPage([330, 215], 'landscape');
-            pdfInstance.deletePage(1);
-            pdfInstance.setPage(1);
-            pdfInstance.addImage(imgData, 'PNG', 0, 0, 330, 215, undefined, 'FAST');
-          }
-        } else if (pdfInstance) {
-          pdfInstance.addPage([330, 215], 'landscape');
-          pdfInstance.setPage(pdfInstance.internal.getNumberOfPages());
-          pdfInstance.addImage(imgData, 'PNG', 0, 0, 330, 215, undefined, 'FAST');
-        }
-      }
-
-      if (pdfInstance) {
-        const pageW = Math.round(pdfInstance.internal.pageSize.getWidth());
-        const pageH = Math.round(pdfInstance.internal.pageSize.getHeight());
-        if (pageW !== 330 || pageH !== 215) {
-          console.warn(`Ukuran halaman PDF terdeteksi ${pageW}x${pageH}mm, diharapkan 330x215mm`);
-        }
-        pdfInstance.save(fileName);
-      }
-
-      if (showToast) {
-        showToast(successToast, 'success');
-      }
-    } catch (err) {
-      if (showToast) {
-        showToast('Gagal membuat PDF. Pastikan koneksi internet tersedia.', 'warning');
-      }
-    } finally {
-      if (measureStage && measureStage.parentNode) {
-        measureStage.parentNode.removeChild(measureStage);
-      }
-      if (stageContainer && stageContainer.parentNode) {
-        stageContainer.parentNode.removeChild(stageContainer);
-      }
-      window.scrollTo(prevScrollX, prevScrollY);
-      setLoading(false);
+    for (let i = 0; i < lines.length; i++) {
+      doc.text(lines[i], textX, firstLineY + i * lineHeightMm, { align });
     }
   };
 
-  // 4. FITUR DOWNLOAD PDF REKAP SANTRI DHOIF & KOSONG BERDASARKAN KELAS TERPILIH
+  const drawF4Footer = (doc: any, leftLabel: string, pageNum: number, totalPages: number) => {
+    const pageW = 330;
+    const marginX = 7;
+    const lineY = 204.5;
+    doc.setDrawColor(203, 213, 225);
+    doc.setLineWidth(0.25);
+    doc.line(marginX, lineY, pageW - marginX, lineY);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(100, 116, 139);
+    doc.text(leftLabel, marginX, 208.5, { align: 'left' });
+    doc.text(
+      `Format F4 Landscape (330 x 215 mm) • Halaman ${pageNum} dari ${totalPages}`,
+      pageW - marginX,
+      208.5,
+      { align: 'right' }
+    );
+  };
+
+  const finalizeAndSaveF4Pdf = (doc: any, fileName: string, successToast: string) => {
+    const pageW = Math.round(doc.internal.pageSize.getWidth());
+    const pageH = Math.round(doc.internal.pageSize.getHeight());
+    if (pageW !== 330 || pageH !== 215) {
+      console.warn(`Ukuran halaman PDF terdeteksi ${pageW}x${pageH}mm, diharapkan 330x215mm`);
+    }
+    doc.save(fileName);
+    if (showToast) {
+      showToast(successToast, 'success');
+    }
+  };
+
+  // 4. FITUR DOWNLOAD PDF REKAP SANTRI DHOIF & KOSONG BERDASARKAN KELAS TERPILIH (VEKTOR INSTAN)
   const handleDownloadDhoifKosongPdf = async () => {
     if (dhoifKosongRows.length === 0) {
       if (showToast) {
@@ -428,6 +317,7 @@ export function RekapNilaiView({
       return;
     }
 
+    setIsGeneratingDhoifPdf(true);
     const kelasLabel =
       selectedKelasId === 'ALL'
         ? 'Semua Kelas'
@@ -437,75 +327,30 @@ export function RekapNilaiView({
     const safeKelas = sanitizeFilePart(kelasLabel);
     const fileName = `Rekap Dhoif & Kosong ${safeKelas}.pdf`;
 
-    const taNama = tahunAjaran?.nama || '2026 – 2027';
-    const semNama = semester?.nama || 'Ganjil';
-    const waliInfo = currentKelas?.waliKelas ? ` • Wali Kelas: ${currentKelas.waliKelas}` : '';
+    if (showToast) showToast(`Membuat PDF Rekap Dhoif & Kosong (${kelasLabel})...`);
 
-    const colNo = 34;
-    const colNama = 210;
-    const colKelas = 56;
-    const colJmlDhoif = 65;
-    const colJmlKosong = 70;
-    const colDhoifList = 380;
-    const colKosongList = 380; // Total: 1195px
+    try {
+      const doc = await getJsPdfInstance();
+      const taNama = tahunAjaran?.nama || '2026 – 2027';
+      const semNama = semester?.nama || 'Ganjil';
+      const waliInfo = currentKelas?.waliKelas ? ` • Wali Kelas: ${currentKelas.waliKelas}` : '';
 
-    await renderF4LandscapePdf({
-      fileName,
-      rowsCount: dhoifKosongRows.length,
-      setLoading: setIsGeneratingDhoifPdf,
-      startToast: `Menyiapkan PDF Rekap Dhoif & Kosong (${kelasLabel})...`,
-      successToast: `PDF Rekap Dhoif & Kosong (${fileName}) berhasil diunduh!`,
-      buildColgroupHtml: () => `
-        <colgroup>
-          <col style="width:${colNo}px;" />
-          <col style="width:${colNama}px;" />
-          <col style="width:${colKelas}px;" />
-          <col style="width:${colJmlDhoif}px;" />
-          <col style="width:${colJmlKosong}px;" />
-          <col style="width:${colDhoifList}px;" />
-          <col style="width:${colKosongList}px;" />
-        </colgroup>
-      `,
-      buildHeaderHtml: (pageNum, totalPages) => `
-        <div style="margin-bottom:8px;border-bottom:2px solid #991B1B;padding-bottom:6px;display:flex;justify-content:space-between;align-items:flex-end;gap:12px;">
-          <div style="min-width:0;flex:1;">
-            <div style="font-size:15px;font-weight:900;color:#991B1B;letter-spacing:0.2px;line-height:1.2;">
-              REKAP SANTRI NILAI DHOIF &amp; KOSONG — ${escapeHtml(kelasLabel.toUpperCase())}
-            </div>
-            <div style="font-size:10px;color:#0F172A;margin-top:2px;font-weight:600;">
-              Pondok Pesantren Bali Bina Insani • Periode: ${escapeHtml(taNama)} (${escapeHtml(semNama)})${escapeHtml(waliInfo)} • Santri Bermasalah: ${dhoifKosongRows.length} dari ${totalSantriDiRekap} Santri
-            </div>
-          </div>
-          <div style="text-align:right;flex-shrink:0;">
-            <div style="display:inline-flex;align-items:center;gap:8px;padding:3px 9px;border-radius:6px;background:#FEE2E2;border:1px solid #EF4444;color:#991B1B;font-size:9px;font-weight:800;">
-              <span>Dhoif (&lt; 2.70): ${totalDhoif}</span>
-              <span>•</span>
-              <span>Kosong: ${totalKosong}</span>
-            </div>
-            <div style="font-size:9px;color:#334155;margin-top:3px;font-weight:700;">
-              Halaman ${pageNum} dari ${totalPages}
-            </div>
-          </div>
-        </div>
-      `,
-      buildTheadHtml: () => `
-        <thead>
-          <tr style="background:#E2E8F0;color:#0F172A;font-size:9.5px;">
-            <th style="padding:6px 5px;text-align:center;border:1px solid #94A3B8;font-weight:800;">No</th>
-            <th style="padding:6px 8px;text-align:left;border:1px solid #94A3B8;font-weight:800;">Nama Santri</th>
-            <th style="padding:6px 5px;text-align:center;border:1px solid #94A3B8;font-weight:800;">Kelas</th>
-            <th style="padding:6px 5px;text-align:center;border:1px solid #94A3B8;font-weight:800;background:#FECACA;color:#7F1D1D;">Jml Dhoif</th>
-            <th style="padding:6px 5px;text-align:center;border:1px solid #94A3B8;font-weight:800;background:#FDE68A;color:#78350F;">Jml Kosong</th>
-            <th style="padding:6px 8px;text-align:left;border:1px solid #94A3B8;font-weight:800;background:#FEE2E2;color:#7F1D1D;">Daftar Mapel Nilai Dhoif (&lt; 2.70)</th>
-            <th style="padding:6px 8px;text-align:left;border:1px solid #94A3B8;font-weight:800;background:#FEF3C7;color:#78350F;">Daftar Mapel Nilai Kosong (Belum Dinilai)</th>
-          </tr>
-        </thead>
-      `,
-      buildRowHtml: (idx) => {
-        const row = dhoifKosongRows[idx];
+      const marginX = 7;
+      const startY = 7;
+      const bottomSafeY = 202; // menyisakan ruang aman di atas footer (204.5mm)
+
+      // Total lebar tepat 316 mm (330 - 14)
+      const wNo = 9;
+      const wNama = 56;
+      const wKelas = 15;
+      const wJmlDhoif = 17;
+      const wJmlKosong = 19;
+      const wDhoifList = 100;
+      const wKosongList = 100;
+
+      const rowData = dhoifKosongRows.map((row, idx) => {
         const dhoifMapels: string[] = [];
         const kosongMapels: string[] = [];
-
         activeMapelFiltered.forEach((mp) => {
           const sc = row.mapelScores[mp.id];
           if (!sc || sc.isKosong) {
@@ -515,43 +360,198 @@ export function RekapNilaiView({
             dhoifMapels.push(`${mp.namaLatin} (${valStr})`);
           }
         });
+        const dhoifText = dhoifMapels.length > 0 ? dhoifMapels.join(', ') : '—';
+        const kosongText = kosongMapels.length > 0 ? kosongMapels.join(', ') : '—';
 
-        return `
-          <tr style="font-size:9.5px;">
-            <td style="padding:5px;text-align:center;border:1px solid #94A3B8;color:#0F172A;background:#F1F5F9;font-weight:600;white-space:nowrap;">${idx + 1}</td>
-            <td style="padding:5px 8px;text-align:left;border:1px solid #94A3B8;font-weight:800;color:#000000;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(row.santri.namaLengkap)}</td>
-            <td style="padding:5px;text-align:center;border:1px solid #94A3B8;font-weight:700;color:#0F172A;white-space:nowrap;">${escapeHtml(row.namaKelas)}</td>
-            <td style="padding:5px;text-align:center;border:1px solid #94A3B8;font-weight:800;white-space:nowrap;${
-              row.dhoifCount > 0 ? 'background:#DC2626;color:#FFFFFF;' : 'background:#FFFFFF;color:#64748B;'
-            }">${row.dhoifCount}</td>
-            <td style="padding:5px;text-align:center;border:1px solid #94A3B8;font-weight:800;white-space:nowrap;${
-              row.kosongCount > 0 ? 'background:#FDE68A;color:#78350F;' : 'background:#FFFFFF;color:#64748B;'
-            }">${row.kosongCount}</td>
-            <td style="padding:5px 8px;text-align:left;border:1px solid #94A3B8;color:#7F1D1D;line-height:1.3;word-break:break-word;${
-              dhoifMapels.length > 0 ? 'background:#FEE2E2;font-weight:700;' : 'background:#FFFFFF;color:#64748B;'
-            }">${dhoifMapels.length > 0 ? escapeHtml(dhoifMapels.join(', ')) : '—'}</td>
-            <td style="padding:5px 8px;text-align:left;border:1px solid #94A3B8;color:#78350F;line-height:1.3;word-break:break-word;${
-              kosongMapels.length > 0 ? 'background:#FEF3C7;font-weight:700;' : 'background:#FFFFFF;color:#64748B;'
-            }">${kosongMapels.length > 0 ? escapeHtml(kosongMapels.join(', ')) : '—'}</td>
-          </tr>
-        `;
-      },
-      buildFooterHtml: (pageNum, totalPages) => `
-        <div style="display:flex;justify-content:space-between;align-items:center;font-size:8.5px;color:#64748B;border-top:1px solid #E2E8F0;padding-top:5px;margin-top:6px;">
-          <span>E-Rapor Pesantren • Rekap Santri Nilai Dhoif &amp; Kosong</span>
-          <span>Format F4 Landscape (330 × 215 mm) • Halaman ${pageNum} dari ${totalPages}</span>
-        </div>
-      `
-    });
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7.5);
+        const dhoifLines: string[] = doc.splitTextToSize(dhoifText, wDhoifList - 3);
+        const kosongLines: string[] = doc.splitTextToSize(kosongText, wKosongList - 3);
+        const maxLines = Math.max(dhoifLines.length, kosongLines.length, 1);
+        const rowH = Math.max(6.2, maxLines * 3.3 + 2.4);
+
+        return { idx, row, dhoifText, kosongText, hasDhoif: dhoifMapels.length > 0, hasKosong: kosongMapels.length > 0, maxLines, rowH };
+      });
+
+      const headerBlockH = 15;
+      const theadH = 8;
+      const tableStartY = startY + headerBlockH;
+
+      // Hitung paginasi sebelum menggambar agar total halaman akurat
+      const pages: typeof rowData[] = [];
+      let curPage: typeof rowData = [];
+      let curY = tableStartY + theadH;
+      for (const item of rowData) {
+        if (curPage.length > 0 && curY + item.rowH > bottomSafeY) {
+          pages.push(curPage);
+          curPage = [item];
+          curY = tableStartY + theadH + item.rowH;
+        } else {
+          curPage.push(item);
+          curY += item.rowH;
+        }
+      }
+      if (curPage.length > 0) pages.push(curPage);
+
+      const drawDhoifPageHeader = (pageNum: number, totalPages: number) => {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(12.5);
+        doc.setTextColor(153, 27, 27);
+        doc.text(
+          `REKAP SANTRI NILAI DHOIF & KOSONG — ${kelasLabel.toUpperCase()}`,
+          marginX,
+          startY + 4.5
+        );
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.setTextColor(15, 23, 42);
+        doc.text(
+          `Pondok Pesantren Bali Bina Insani • Periode: ${taNama} (${semNama})${waliInfo} • Santri Bermasalah: ${dhoifKosongRows.length} dari ${totalSantriDiRekap} Santri`,
+          marginX,
+          startY + 9.5
+        );
+
+        // Badge kanan
+        const badgeText = `Dhoif (< 2.70): ${totalDhoif}  •  Kosong: ${totalKosong}`;
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7.5);
+        const badgeW = doc.getTextWidth(badgeText) + 6;
+        const badgeX = 330 - marginX - badgeW;
+        doc.setFillColor(254, 226, 226);
+        doc.setDrawColor(239, 68, 68);
+        doc.setLineWidth(0.25);
+        doc.roundedRect(badgeX, startY + 0.5, badgeW, 5.5, 1, 1, 'FD');
+        doc.setTextColor(153, 27, 27);
+        doc.text(badgeText, badgeX + badgeW / 2, startY + 4.2, { align: 'center' });
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7.5);
+        doc.setTextColor(51, 65, 85);
+        doc.text(`Halaman ${pageNum} dari ${totalPages}`, 330 - marginX, startY + 9.5, { align: 'right' });
+
+        doc.setDrawColor(153, 27, 27);
+        doc.setLineWidth(0.5);
+        doc.line(marginX, startY + 12, 330 - marginX, startY + 12);
+
+        // Table header
+        let cx = marginX;
+        const hy = tableStartY;
+        const cols: Array<{ w: number; t: string; align: 'left' | 'center'; fill: RGB; txt: RGB }> = [
+          { w: wNo, t: 'No', align: 'center', fill: [226, 232, 240], txt: [15, 23, 42] },
+          { w: wNama, t: 'Nama Santri', align: 'left', fill: [226, 232, 240], txt: [15, 23, 42] },
+          { w: wKelas, t: 'Kelas', align: 'center', fill: [226, 232, 240], txt: [15, 23, 42] },
+          { w: wJmlDhoif, t: 'Jml Dhoif', align: 'center', fill: [254, 202, 202], txt: [127, 29, 29] },
+          { w: wJmlKosong, t: 'Jml Kosong', align: 'center', fill: [253, 230, 138], txt: [120, 53, 15] },
+          { w: wDhoifList, t: 'Daftar Mapel Nilai Dhoif (< 2.70)', align: 'left', fill: [254, 226, 226], txt: [127, 29, 29] },
+          { w: wKosongList, t: 'Daftar Mapel Nilai Kosong (Belum Dinilai)', align: 'left', fill: [254, 243, 199], txt: [120, 53, 15] }
+        ];
+        for (const c of cols) {
+          drawPdfCell(doc, {
+            x: cx,
+            y: hy,
+            w: c.w,
+            h: theadH,
+            text: c.t,
+            align: c.align,
+            fillRgb: c.fill,
+            textRgb: c.txt,
+            fontStyle: 'bold',
+            fontSize: 8
+          });
+          cx += c.w;
+        }
+      };
+
+      for (let p = 0; p < pages.length; p++) {
+        if (p > 0) doc.addPage([330, 215], 'landscape');
+        drawDhoifPageHeader(p + 1, pages.length);
+
+        let ry = tableStartY + theadH;
+        for (const item of pages[p]) {
+          let cx = marginX;
+          drawPdfCell(doc, {
+            x: cx, y: ry, w: wNo, h: item.rowH,
+            text: String(item.idx + 1), align: 'center',
+            fillRgb: [241, 245, 249], textRgb: [15, 23, 42], fontStyle: 'bold', fontSize: 7.5
+          });
+          cx += wNo;
+
+          drawPdfCell(doc, {
+            x: cx, y: ry, w: wNama, h: item.rowH,
+            text: String(item.row.santri.namaLengkap || '').toUpperCase(), align: 'left',
+            fillRgb: [255, 255, 255], textRgb: [0, 0, 0], fontStyle: 'bold', fontSize: 7.5
+          });
+          cx += wNama;
+
+          drawPdfCell(doc, {
+            x: cx, y: ry, w: wKelas, h: item.rowH,
+            text: item.row.namaKelas, align: 'center',
+            fillRgb: [255, 255, 255], textRgb: [15, 23, 42], fontStyle: 'bold', fontSize: 7.5
+          });
+          cx += wKelas;
+
+          drawPdfCell(doc, {
+            x: cx, y: ry, w: wJmlDhoif, h: item.rowH,
+            text: String(item.row.dhoifCount), align: 'center',
+            fillRgb: item.row.dhoifCount > 0 ? [220, 38, 38] : [255, 255, 255],
+            textRgb: item.row.dhoifCount > 0 ? [255, 255, 255] : [100, 116, 139],
+            fontStyle: 'bold', fontSize: 8
+          });
+          cx += wJmlDhoif;
+
+          drawPdfCell(doc, {
+            x: cx, y: ry, w: wJmlKosong, h: item.rowH,
+            text: String(item.row.kosongCount), align: 'center',
+            fillRgb: item.row.kosongCount > 0 ? [253, 230, 138] : [255, 255, 255],
+            textRgb: item.row.kosongCount > 0 ? [120, 53, 15] : [100, 116, 139],
+            fontStyle: 'bold', fontSize: 8
+          });
+          cx += wJmlKosong;
+
+          drawPdfCell(doc, {
+            x: cx, y: ry, w: wDhoifList, h: item.rowH,
+            text: item.dhoifText, align: 'left',
+            fillRgb: item.hasDhoif ? [254, 226, 226] : [255, 255, 255],
+            textRgb: item.hasDhoif ? [127, 29, 29] : [100, 116, 139],
+            fontStyle: item.hasDhoif ? 'bold' : 'normal',
+            fontSize: 7.5, wrap: true, maxLines: item.maxLines
+          });
+          cx += wDhoifList;
+
+          drawPdfCell(doc, {
+            x: cx, y: ry, w: wKosongList, h: item.rowH,
+            text: item.kosongText, align: 'left',
+            fillRgb: item.hasKosong ? [254, 243, 199] : [255, 255, 255],
+            textRgb: item.hasKosong ? [120, 53, 15] : [100, 116, 139],
+            fontStyle: item.hasKosong ? 'bold' : 'normal',
+            fontSize: 7.5, wrap: true, maxLines: item.maxLines
+          });
+
+          ry += item.rowH;
+        }
+
+        drawF4Footer(doc, 'E-Rapor Pesantren • Rekap Santri Nilai Dhoif & Kosong', p + 1, pages.length);
+      }
+
+      finalizeAndSaveF4Pdf(doc, fileName, `PDF Rekap Dhoif & Kosong (${fileName}) berhasil diunduh!`);
+    } catch (err) {
+      if (showToast) {
+        showToast('Gagal membuat PDF Rekap Dhoif & Kosong. Pastikan koneksi internet tersedia.', 'warning');
+      }
+    } finally {
+      setIsGeneratingDhoifPdf(false);
+    }
   };
 
-  // 5. Fungsi Download PDF F4 Landscape (330 x 215 mm, Anti-Terpotong Samping & Tanpa Tumpang Tindih)
+  // 5. Fungsi Download PDF F4 Landscape (330 x 215 mm, Vektor Instan, Tanpa Jumlah/Rata-rata/Peringkat)
   const handleDownloadPdf = async () => {
     if (rekapRows.length === 0) {
       if (showToast) showToast('Tidak ada data santri untuk diunduh sebagai PDF.', 'warning');
       return;
     }
 
+    setIsGeneratingPdf(true);
     const kelasLabel =
       selectedKelasId === 'ALL'
         ? 'Semua Kelas'
@@ -569,147 +569,228 @@ export function RekapNilaiView({
     }
     const fileName = `Rekap Nilai ${safeKelas} - ${safeMapel}.pdf`;
 
-    const taNama = tahunAjaran?.nama || '2026 – 2027';
-    const semNama = semester?.nama || 'Ganjil';
-    const waliInfo = currentKelas?.waliKelas ? ` • Wali Kelas: ${currentKelas.waliKelas}` : '';
+    if (showToast) showToast('Membuat PDF F4 Landscape Rekap Nilai...');
 
-    const innerWidth = 1195;
-    const mapelCount = Math.max(activeMapelFiltered.length, 1);
-    const baseFontSize = mapelCount <= 5 ? 10 : mapelCount <= 7 ? 9.5 : 8.5;
-    const headerFontSize = mapelCount <= 5 ? 9.5 : mapelCount <= 7 ? 8.5 : 7.5;
-    const cellPad = mapelCount <= 5 ? '5px 5px' : mapelCount <= 7 ? '4.5px 4px' : '3.5px 3px';
+    try {
+      const doc = await getJsPdfInstance();
+      const taNama = tahunAjaran?.nama || '2026 – 2027';
+      const semNama = semester?.nama || 'Ganjil';
+      const waliInfo = currentKelas?.waliKelas ? ` • Wali Kelas: ${currentKelas.waliKelas}` : '';
 
-    const noW = 28;
-    const baseNamaW = 195;
-    const kelasW = 38;
-    const baseFixedW = noW + baseNamaW + kelasW; // 261px
-    const availableMapelTotalW = innerWidth - baseFixedW; // 934px
-    const perMapelW = Math.floor(availableMapelTotalW / mapelCount);
-    const roundingRemainder = availableMapelTotalW - perMapelW * mapelCount;
-    const namaW = baseNamaW + roundingRemainder;
-    const scoreColW = Math.floor(perMapelW * 0.42);
-    const predColW = perMapelW - scoreColW;
+      const marginX = 7;
+      const startY = 7;
+      const innerW = 316; // 330 - 14
+      const bottomSafeY = 202; // menyisakan ruang aman di atas footer (204.5mm)
 
-    await renderF4LandscapePdf({
-      fileName,
-      rowsCount: rekapRows.length,
-      setLoading: setIsGeneratingPdf,
-      startToast: 'Menyiapkan PDF F4 Landscape Rekap Nilai...',
-      successToast: `PDF F4 Landscape (${fileName}) berhasil diunduh!`,
-      buildColgroupHtml: () => `
-        <colgroup>
-          <col style="width:${noW}px;" />
-          <col style="width:${namaW}px;" />
-          <col style="width:${kelasW}px;" />
-          ${activeMapelFiltered
-          .map(
-            () =>
-              `<col style="width:${scoreColW}px;" /><col style="width:${predColW}px;" />`
-          )
-          .join('')}
-        </colgroup>
-      `,
-      buildHeaderHtml: (pageNum, totalPages) => `
-        <div style="margin-bottom:8px;border-bottom:2px solid #065F46;padding-bottom:6px;display:flex;justify-content:space-between;align-items:flex-end;gap:12px;">
-          <div style="min-width:0;flex:1;">
-            <div style="font-size:15px;font-weight:900;color:#065F46;letter-spacing:0.2px;line-height:1.2;">
-              REKAPITULASI NILAI SANTRI — ${escapeHtml(kelasLabel.toUpperCase())}
-            </div>
-            <div style="font-size:10px;color:#0F172A;margin-top:2px;font-weight:600;">
-              Pondok Pesantren Bali Bina Insani • Periode: ${escapeHtml(taNama)} (${escapeHtml(semNama)})${escapeHtml(waliInfo)} • Total: ${totalSantriDiRekap} Santri
-            </div>
-            <div style="font-size:9px;color:#1E293B;margin-top:2px;line-height:1.25;">
-              <strong>Mata Pelajaran (${activeMapelFiltered.length}):</strong> ${escapeHtml(mapelLabelRaw)}
-            </div>
-          </div>
-          <div style="text-align:right;flex-shrink:0;">
-            <div style="display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:6px;background:#FEE2E2;border:1px solid #EF4444;color:#991B1B;font-size:9px;font-weight:800;">
-              <span style="display:inline-block;width:7px;height:7px;border-radius:999px;background:#DC2626;"></span>
-              Merah = Dhoif (&lt; 2.70) / Kosong
-            </div>
-            <div style="font-size:9px;color:#334155;margin-top:3px;font-weight:700;">
-              Halaman ${pageNum} dari ${totalPages}
-            </div>
-          </div>
-        </div>
-      `,
-      buildTheadHtml: () => `
-        <thead>
-          <tr style="background:#E2E8F0;color:#0F172A;font-size:${headerFontSize}px;">
-            <th style="padding:5px 4px 2px 4px;text-align:center;border-top:1px solid #94A3B8;border-left:1px solid #94A3B8;border-right:1px solid #94A3B8;border-bottom:none;background:#E2E8F0;font-weight:800;vertical-align:bottom;">No</th>
-            <th style="padding:5px 6px 2px 6px;text-align:left;border-top:1px solid #94A3B8;border-left:1px solid #94A3B8;border-right:1px solid #94A3B8;border-bottom:none;background:#E2E8F0;font-weight:800;vertical-align:bottom;">NAMA</th>
-            <th style="padding:5px 4px 2px 4px;text-align:center;border-top:1px solid #94A3B8;border-left:1px solid #94A3B8;border-right:1px solid #94A3B8;border-bottom:none;background:#E2E8F0;font-weight:800;vertical-align:bottom;">Kelas</th>
-            ${activeMapelFiltered
-          .map(
-            (mp) => `
-              <th colspan="2" style="padding:4px 4px;text-align:center;border:1px solid #94A3B8;font-weight:800;background:#DBEAFE;color:#0F172A;line-height:1.2;vertical-align:middle;font-size:${mapelCount >= 8 ? 7.2 : headerFontSize}px;overflow:hidden;">
-                <div style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word;">
-                  ${escapeHtml(String(mp.namaLatin || '').replace(/\//g, ' / '))}${mp.masukRapor === false ? ' <span style="font-size:7px;color:#92400E;">(Rekap)</span>' : ''}
-                </div>
-              </th>
-            `
-          )
-          .join('')}
-          </tr>
-          <tr style="background:#F1F5F9;color:#1E293B;font-size:${Math.max(headerFontSize - 0.5, 7)}px;">
-            <th style="padding:0 4px 4px 4px;border-top:none;border-left:1px solid #94A3B8;border-right:1px solid #94A3B8;border-bottom:1px solid #94A3B8;background:#E2E8F0;">&nbsp;</th>
-            <th style="padding:0 6px 4px 6px;border-top:none;border-left:1px solid #94A3B8;border-right:1px solid #94A3B8;border-bottom:1px solid #94A3B8;background:#E2E8F0;">&nbsp;</th>
-            <th style="padding:0 4px 4px 4px;border-top:none;border-left:1px solid #94A3B8;border-right:1px solid #94A3B8;border-bottom:1px solid #94A3B8;background:#E2E8F0;">&nbsp;</th>
-            ${activeMapelFiltered
-          .map(
-            () => `
-              <th style="padding:3px 2px;text-align:center;border:1px solid #94A3B8;font-weight:700;background:#EFF6FF;color:#1E3A8A;">Nilai</th>
-              <th style="padding:3px 2px;text-align:center;border:1px solid #94A3B8;font-weight:700;background:#E2E8F0;color:#1E293B;">Predikat</th>
-            `
-          )
-          .join('')}
-          </tr>
-        </thead>
-      `,
-      buildRowHtml: (idx) => {
-        const row = rekapRows[idx];
-        return `
-          <tr style="font-size:${baseFontSize}px;">
-            <td style="padding:${cellPad};text-align:center;border:1px solid #94A3B8;color:#0F172A;background:#F1F5F9;font-weight:600;white-space:nowrap;">${idx + 1}</td>
-            <td style="padding:${cellPad};text-align:left;border:1px solid #94A3B8;font-weight:800;color:#000000;text-transform:uppercase;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(row.santri.namaLengkap)}</td>
-            <td style="padding:${cellPad};text-align:center;border:1px solid #94A3B8;font-weight:700;color:#0F172A;white-space:nowrap;">${escapeHtml(row.namaKelas)}</td>
-            ${activeMapelFiltered
-            .map((mp) => {
-              const sc = row.mapelScores[mp.id];
-              const isRed = sc ? sc.isDhoif || sc.isKosong : true;
-              const valDisplay =
-                sc && sc.isFilled && sc.angkaNilai !== null
-                  ? Number.isInteger(sc.angkaNilai)
-                    ? sc.angkaNilai
-                    : sc.angkaNilai.toFixed(2)
-                  : '—';
-              const predDisplay = sc && sc.isFilled ? sc.predikatLatin : 'Kosong';
+      const mapelCount = Math.max(activeMapelFiltered.length, 1);
+      const wNo = 7.5;
+      const baseNamaW = 51.5;
+      const wKelas = 10;
+      const fixedW = wNo + baseNamaW + wKelas; // 69mm
+      const availMapelW = innerW - fixedW; // 247mm
+      const perMapelW = Number((availMapelW / mapelCount).toFixed(2));
+      const usedMapelW = perMapelW * mapelCount;
+      const wNama = Number((baseNamaW + (availMapelW - usedMapelW)).toFixed(2));
+      const wScore = Number((perMapelW * 0.42).toFixed(2));
+      const wPred = Number((perMapelW - wScore).toFixed(2));
 
-              const scoreStyle = isRed
-                ? 'background:#DC2626;color:#FFFFFF;border:1px solid #991B1B;'
-                : 'background:#FFFFFF;color:#000000;border:1px solid #94A3B8;';
-              const predStyle = sc?.isKosong
-                ? 'background:#FEE2E2;color:#991B1B;border:1px solid #94A3B8;font-weight:700;font-style:italic;'
-                : sc?.isDhoif
-                  ? 'background:#FEE2E2;color:#991B1B;border:1px solid #94A3B8;font-weight:800;'
-                  : 'background:#FFFFFF;color:#0F172A;border:1px solid #94A3B8;';
+      const mapelHeaderFont = mapelCount <= 6 ? 7.5 : mapelCount <= 8 ? 6.8 : 6.0;
+      const bodyFont = mapelCount <= 6 ? 7.5 : mapelCount <= 8 ? 7.0 : 6.4;
+      const rowH = mapelCount <= 6 ? 6.0 : 5.6;
 
-              return `
-                <td style="padding:${cellPad};text-align:center;font-family:monospace;font-weight:800;white-space:nowrap;${scoreStyle}">${escapeHtml(valDisplay)}</td>
-                <td style="padding:${cellPad};text-align:center;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${predStyle}">${escapeHtml(predDisplay)}</td>
-              `;
-            })
-            .join('')}
-          </tr>
-        `;
-      },
-      buildFooterHtml: (pageNum, totalPages) => `
-        <div style="display:flex;justify-content:space-between;align-items:center;font-size:8.5px;color:#64748B;border-top:1px solid #E2E8F0;padding-top:5px;margin-top:6px;">
-          <span>E-Rapor Pesantren • Pondok Pesantren Bali Bina Insani</span>
-          <span>Format F4 Landscape (330 × 215 mm) • Halaman ${pageNum} dari ${totalPages}</span>
-        </div>
-      `
-    });
+      // Hitung baris mapel header di atas agar tinggi header pas
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7.5);
+      const mapelBannerLines: string[] = doc.splitTextToSize(
+        `Mata Pelajaran (${activeMapelFiltered.length}): ${mapelLabelRaw}`,
+        255
+      ).slice(0, 2);
+      const headerBlockH = mapelBannerLines.length > 1 ? 18.5 : 15.5;
+      const theadRow1H = 8.0;
+      const theadRow2H = 5.0;
+      const theadTotalH = theadRow1H + theadRow2H;
+      const tableStartY = startY + headerBlockH;
+
+      const availableRowsH = bottomSafeY - (tableStartY + theadTotalH);
+      const rowsPerPage = Math.max(1, Math.floor(availableRowsH / rowH));
+      const pages: number[][] = [];
+      for (let i = 0; i < rekapRows.length; i += rowsPerPage) {
+        pages.push(
+          Array.from({ length: Math.min(rowsPerPage, rekapRows.length - i) }, (_, k) => i + k)
+        );
+      }
+
+      const drawRekapPageHeader = (pageNum: number, totalPages: number) => {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(12.5);
+        doc.setTextColor(6, 95, 70);
+        doc.text(
+          `REKAPITULASI NILAI SANTRI — ${kelasLabel.toUpperCase()}`,
+          marginX,
+          startY + 4.5
+        );
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.setTextColor(15, 23, 42);
+        doc.text(
+          `Pondok Pesantren Bali Bina Insani • Periode: ${taNama} (${semNama})${waliInfo} • Total: ${totalSantriDiRekap} Santri`,
+          marginX,
+          startY + 9.2
+        );
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7.5);
+        doc.setTextColor(30, 41, 59);
+        for (let l = 0; l < mapelBannerLines.length; l++) {
+          doc.text(mapelBannerLines[l], marginX, startY + 13.0 + l * 3.2);
+        }
+
+        // Badge legenda merah
+        const badgeText = 'Merah = Dhoif (< 2.70) / Kosong';
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7.5);
+        const badgeW = doc.getTextWidth(badgeText) + 6;
+        const badgeX = 330 - marginX - badgeW;
+        doc.setFillColor(254, 226, 226);
+        doc.setDrawColor(239, 68, 68);
+        doc.setLineWidth(0.25);
+        doc.roundedRect(badgeX, startY + 0.5, badgeW, 5.5, 1, 1, 'FD');
+        doc.setTextColor(153, 27, 27);
+        doc.text(badgeText, badgeX + badgeW / 2, startY + 4.2, { align: 'center' });
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7.5);
+        doc.setTextColor(51, 65, 85);
+        doc.text(`Halaman ${pageNum} dari ${totalPages}`, 330 - marginX, startY + 9.2, { align: 'right' });
+
+        const dividerY = startY + headerBlockH - 2.2;
+        doc.setDrawColor(6, 95, 70);
+        doc.setLineWidth(0.5);
+        doc.line(marginX, dividerY, 330 - marginX, dividerY);
+
+        // Table Header 2 Baris (No, NAMA, Kelas digambar penuh tanpa rowspan bug)
+        let cx = marginX;
+        const hy = tableStartY;
+
+        drawPdfCell(doc, {
+          x: cx, y: hy, w: wNo, h: theadTotalH,
+          text: 'No', align: 'center', fillRgb: [226, 232, 240], textRgb: [15, 23, 42],
+          fontStyle: 'bold', fontSize: 7.5
+        });
+        cx += wNo;
+
+        drawPdfCell(doc, {
+          x: cx, y: hy, w: wNama, h: theadTotalH,
+          text: 'NAMA', align: 'left', fillRgb: [226, 232, 240], textRgb: [15, 23, 42],
+          fontStyle: 'bold', fontSize: 7.5
+        });
+        cx += wNama;
+
+        drawPdfCell(doc, {
+          x: cx, y: hy, w: wKelas, h: theadTotalH,
+          text: 'Kelas', align: 'center', fillRgb: [226, 232, 240], textRgb: [15, 23, 42],
+          fontStyle: 'bold', fontSize: 7.5
+        });
+        cx += wKelas;
+
+        for (const mp of activeMapelFiltered) {
+          const mapelTitle = `${String(mp.namaLatin || '').replace(/\//g, ' / ')}${mp.masukRapor === false ? ' (Rekap)' : ''}`;
+          drawPdfCell(doc, {
+            x: cx, y: hy, w: wScore + wPred, h: theadRow1H,
+            text: mapelTitle, align: 'center', fillRgb: [219, 234, 254], textRgb: [15, 23, 42],
+            fontStyle: 'bold', fontSize: mapelHeaderFont, wrap: true, maxLines: 2, padX: 1
+          });
+          drawPdfCell(doc, {
+            x: cx, y: hy + theadRow1H, w: wScore, h: theadRow2H,
+            text: 'Nilai', align: 'center', fillRgb: [239, 246, 255], textRgb: [30, 58, 138],
+            fontStyle: 'bold', fontSize: 6.8, padX: 0.8
+          });
+          drawPdfCell(doc, {
+            x: cx + wScore, y: hy + theadRow1H, w: wPred, h: theadRow2H,
+            text: 'Predikat', align: 'center', fillRgb: [226, 232, 240], textRgb: [30, 41, 59],
+            fontStyle: 'bold', fontSize: 6.8, padX: 0.8
+          });
+          cx += wScore + wPred;
+        }
+      };
+
+      for (let p = 0; p < pages.length; p++) {
+        if (p > 0) doc.addPage([330, 215], 'landscape');
+        drawRekapPageHeader(p + 1, pages.length);
+
+        let ry = tableStartY + theadTotalH;
+        for (const idx of pages[p]) {
+          const row = rekapRows[idx];
+          let cx = marginX;
+
+          drawPdfCell(doc, {
+            x: cx, y: ry, w: wNo, h: rowH,
+            text: String(idx + 1), align: 'center',
+            fillRgb: [241, 245, 249], textRgb: [15, 23, 42], fontStyle: 'bold', fontSize: bodyFont, padX: 0.8
+          });
+          cx += wNo;
+
+          drawPdfCell(doc, {
+            x: cx, y: ry, w: wNama, h: rowH,
+            text: String(row.santri.namaLengkap || '').toUpperCase(), align: 'left',
+            fillRgb: [255, 255, 255], textRgb: [0, 0, 0], fontStyle: 'bold', fontSize: bodyFont, padX: 1.5
+          });
+          cx += wNama;
+
+          drawPdfCell(doc, {
+            x: cx, y: ry, w: wKelas, h: rowH,
+            text: row.namaKelas, align: 'center',
+            fillRgb: [255, 255, 255], textRgb: [15, 23, 42], fontStyle: 'bold', fontSize: bodyFont, padX: 0.8
+          });
+          cx += wKelas;
+
+          for (const mp of activeMapelFiltered) {
+            const sc = row.mapelScores[mp.id];
+            const isRed = sc ? sc.isDhoif || sc.isKosong : true;
+            const valDisplay =
+              sc && sc.isFilled && sc.angkaNilai !== null
+                ? Number.isInteger(sc.angkaNilai)
+                  ? String(sc.angkaNilai)
+                  : sc.angkaNilai.toFixed(2)
+                : '—';
+            const predDisplay = sc && sc.isFilled ? sc.predikatLatin : 'Kosong';
+
+            drawPdfCell(doc, {
+              x: cx, y: ry, w: wScore, h: rowH,
+              text: valDisplay, align: 'center',
+              fillRgb: isRed ? [220, 38, 38] : [255, 255, 255],
+              textRgb: isRed ? [255, 255, 255] : [0, 0, 0],
+              borderRgb: isRed ? [153, 27, 27] : [148, 163, 184],
+              fontStyle: 'bold', fontSize: bodyFont, padX: 0.5
+            });
+
+            drawPdfCell(doc, {
+              x: cx + wScore, y: ry, w: wPred, h: rowH,
+              text: predDisplay, align: 'center',
+              fillRgb: sc?.isKosong || sc?.isDhoif ? [254, 226, 226] : [255, 255, 255],
+              textRgb: sc?.isKosong || sc?.isDhoif ? [153, 27, 27] : [15, 23, 42],
+              fontStyle: sc?.isKosong ? 'italic' : sc?.isDhoif ? 'bold' : 'normal',
+              fontSize: Math.max(bodyFont - 0.5, 6), padX: 0.5
+            });
+
+            cx += wScore + wPred;
+          }
+
+          ry += rowH;
+        }
+
+        drawF4Footer(doc, 'E-Rapor Pesantren • Pondok Pesantren Bali Bina Insani', p + 1, pages.length);
+      }
+
+      finalizeAndSaveF4Pdf(doc, fileName, `PDF F4 Landscape (${fileName}) berhasil diunduh!`);
+    } catch (err) {
+      if (showToast) {
+        showToast('Gagal membuat PDF Rekap Nilai. Pastikan koneksi internet tersedia.', 'warning');
+      }
+    } finally {
+      setIsGeneratingPdf(false);
+    }
   };
 
   return (
