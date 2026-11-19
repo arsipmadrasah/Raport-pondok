@@ -579,14 +579,11 @@ export function RekapNilaiView({
     const headerFontSize = mapelCount <= 5 ? 9.5 : mapelCount <= 7 ? 8.5 : 7.5;
     const cellPad = mapelCount <= 5 ? '5px 5px' : mapelCount <= 7 ? '4.5px 4px' : '3.5px 3px';
 
-    const noW = 26;
-    const baseNamaW = 175;
-    const kelasW = 34;
-    const jumlahW = 48;
-    const rataW = 52;
-    const rankW = 54;
-    const baseFixedW = noW + baseNamaW + kelasW + jumlahW + rataW + rankW; // 389px
-    const availableMapelTotalW = innerWidth - baseFixedW; // 806px
+    const noW = 28;
+    const baseNamaW = 195;
+    const kelasW = 38;
+    const baseFixedW = noW + baseNamaW + kelasW; // 261px
+    const availableMapelTotalW = innerWidth - baseFixedW; // 934px
     const perMapelW = Math.floor(availableMapelTotalW / mapelCount);
     const roundingRemainder = availableMapelTotalW - perMapelW * mapelCount;
     const namaW = baseNamaW + roundingRemainder;
@@ -610,9 +607,6 @@ export function RekapNilaiView({
               `<col style="width:${scoreColW}px;" /><col style="width:${predColW}px;" />`
           )
           .join('')}
-          <col style="width:${jumlahW}px;" />
-          <col style="width:${rataW}px;" />
-          <col style="width:${rankW}px;" />
         </colgroup>
       `,
       buildHeaderHtml: (pageNum, totalPages) => `
@@ -642,9 +636,9 @@ export function RekapNilaiView({
       buildTheadHtml: () => `
         <thead>
           <tr style="background:#E2E8F0;color:#0F172A;font-size:${headerFontSize}px;">
-            <th rowspan="2" style="padding:${cellPad};text-align:center;border:1px solid #94A3B8;font-weight:800;vertical-align:middle;">No</th>
-            <th rowspan="2" style="padding:${cellPad};text-align:left;border:1px solid #94A3B8;font-weight:800;vertical-align:middle;">NAMA</th>
-            <th rowspan="2" style="padding:${cellPad};text-align:center;border:1px solid #94A3B8;font-weight:800;vertical-align:middle;">Kelas</th>
+            <th style="padding:5px 4px 2px 4px;text-align:center;border-top:1px solid #94A3B8;border-left:1px solid #94A3B8;border-right:1px solid #94A3B8;border-bottom:none;background:#E2E8F0;font-weight:800;vertical-align:bottom;">No</th>
+            <th style="padding:5px 6px 2px 6px;text-align:left;border-top:1px solid #94A3B8;border-left:1px solid #94A3B8;border-right:1px solid #94A3B8;border-bottom:none;background:#E2E8F0;font-weight:800;vertical-align:bottom;">NAMA</th>
+            <th style="padding:5px 4px 2px 4px;text-align:center;border-top:1px solid #94A3B8;border-left:1px solid #94A3B8;border-right:1px solid #94A3B8;border-bottom:none;background:#E2E8F0;font-weight:800;vertical-align:bottom;">Kelas</th>
             ${activeMapelFiltered
           .map(
             (mp) => `
@@ -656,11 +650,11 @@ export function RekapNilaiView({
             `
           )
           .join('')}
-            <th rowspan="2" style="padding:${cellPad};text-align:center;border:1px solid #94A3B8;font-weight:800;background:#CBD5E1;color:#0F172A;vertical-align:middle;">Jumlah</th>
-            <th rowspan="2" style="padding:${cellPad};text-align:center;border:1px solid #94A3B8;font-weight:800;background:#CBD5E1;color:#0F172A;vertical-align:middle;">Rata-rata</th>
-            <th rowspan="2" style="padding:${cellPad};text-align:center;border:1px solid #94A3B8;font-weight:800;background:#FDE68A;color:#78350F;vertical-align:middle;">Peringkat</th>
           </tr>
           <tr style="background:#F1F5F9;color:#1E293B;font-size:${Math.max(headerFontSize - 0.5, 7)}px;">
+            <th style="padding:0 4px 4px 4px;border-top:none;border-left:1px solid #94A3B8;border-right:1px solid #94A3B8;border-bottom:1px solid #94A3B8;background:#E2E8F0;">&nbsp;</th>
+            <th style="padding:0 6px 4px 6px;border-top:none;border-left:1px solid #94A3B8;border-right:1px solid #94A3B8;border-bottom:1px solid #94A3B8;background:#E2E8F0;">&nbsp;</th>
+            <th style="padding:0 4px 4px 4px;border-top:none;border-left:1px solid #94A3B8;border-right:1px solid #94A3B8;border-bottom:1px solid #94A3B8;background:#E2E8F0;">&nbsp;</th>
             ${activeMapelFiltered
           .map(
             () => `
@@ -706,19 +700,6 @@ export function RekapNilaiView({
               `;
             })
             .join('')}
-            <td style="padding:${cellPad};text-align:center;border:1px solid #94A3B8;font-family:monospace;font-weight:800;color:#000000;background:#F1F5F9;white-space:nowrap;">
-              ${row.filledCount > 0 ? row.totalScore.toFixed(2) : '—'}
-            </td>
-            <td style="padding:${cellPad};text-align:center;border:1px solid #94A3B8;font-family:monospace;font-weight:800;white-space:nowrap;${
-              row.filledCount > 0 && row.averageScore < 2.7
-                ? 'background:#FECACA;color:#7F1D1D;border-color:#EF4444;'
-                : 'background:#F1F5F9;color:#065F46;'
-            }">
-              ${row.filledCount > 0 ? row.averageScore.toFixed(2) : '—'}
-            </td>
-            <td style="padding:${cellPad};text-align:center;border:1px solid #94A3B8;font-weight:800;color:#000000;background:#FEF3C7;white-space:nowrap;">
-              ${escapeHtml(row.rank)}
-            </td>
           </tr>
         `;
       },
