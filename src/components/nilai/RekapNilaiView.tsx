@@ -251,7 +251,7 @@ export function RekapNilaiView({
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
 
-  // 5. Fungsi Download PDF A4 Landscape (Anti-Terpotong Samping & Sesuai Format Aplikasi)
+  // 5. Fungsi Download PDF F4 Landscape (330 x 215 mm, Anti-Terpotong Samping & Tanpa Tumpang Tindih)
   const handleDownloadPdf = async () => {
     if (rekapRows.length === 0) {
       if (showToast) showToast('Tidak ada data santri untuk diunduh sebagai PDF.', 'warning');
@@ -259,7 +259,7 @@ export function RekapNilaiView({
     }
 
     setIsGeneratingPdf(true);
-    if (showToast) showToast('Menyiapkan PDF A4 Landscape Rekap Nilai...');
+    if (showToast) showToast('Menyiapkan PDF F4 Landscape Rekap Nilai...');
 
     let measureStage: HTMLElement | null = null;
     let stageContainer: HTMLElement | null = null;
@@ -299,26 +299,30 @@ export function RekapNilaiView({
       const semNama = semester?.nama || 'Ganjil';
       const waliInfo = currentKelas?.waliKelas ? ` • Wali Kelas: ${currentKelas.waliKelas}` : '';
 
-      // Ukuran pas A4 Landscape (297mm x 210mm pada 96dpi) dengan margin 7mm (26px) di semua sisi
-      const stageWidth = 1123;
-      const pageHeightPx = 794;
+      // Ukuran pas F4 Landscape (330mm x 215mm pada 96dpi) dengan margin 26px di semua sisi
+      const stageWidth = 1247;
+      const pageHeightPx = 813;
       const padPx = 26;
-      const innerWidth = stageWidth - padPx * 2; // 1071px
-      const innerMaxHeight = pageHeightPx - padPx * 2; // 742px
+      const innerWidth = stageWidth - padPx * 2; // 1195px
+      const innerMaxHeight = pageHeightPx - padPx * 2; // 761px
 
       const mapelCount = Math.max(activeMapelFiltered.length, 1);
-      const baseFontSize = mapelCount <= 5 ? 10 : mapelCount <= 7 ? 9 : 8;
+      const baseFontSize = mapelCount <= 5 ? 10 : mapelCount <= 7 ? 9.5 : 8.5;
       const headerFontSize = mapelCount <= 5 ? 9.5 : mapelCount <= 7 ? 8.5 : 7.5;
       const cellPad = mapelCount <= 5 ? '5px 5px' : mapelCount <= 7 ? '4.5px 4px' : '3.5px 3px';
 
-      const noW = 24;
-      const namaW = mapelCount <= 5 ? 180 : mapelCount <= 7 ? 160 : 140;
-      const kelasW = 32;
-      const jumlahW = 44;
-      const rataW = 48;
-      const rankW = 50;
-      const fixedW = noW + namaW + kelasW + jumlahW + rataW + rankW;
-      const perMapelW = Math.floor((innerWidth - fixedW) / mapelCount);
+      const noW = 26;
+      const baseNamaW = 175;
+      const kelasW = 34;
+      const jumlahW = 48;
+      const rataW = 52;
+      const rankW = 54;
+      const baseFixedW = noW + baseNamaW + kelasW + jumlahW + rataW + rankW; // 389px
+      const availableMapelTotalW = innerWidth - baseFixedW; // 806px
+      const perMapelW = Math.floor(availableMapelTotalW / mapelCount);
+      const roundingRemainder = availableMapelTotalW - perMapelW * mapelCount;
+      // Sisa pembulatan diserap kolom Nama agar total lebar tepat 1195px
+      const namaW = baseNamaW + roundingRemainder;
       const scoreColW = Math.floor(perMapelW * 0.42);
       const predColW = perMapelW - scoreColW;
 
@@ -373,8 +377,10 @@ export function RekapNilaiView({
             ${activeMapelFiltered
           .map(
             (mp) => `
-              <th colspan="2" style="padding:4px 5px;text-align:center;border:1px solid #CBD5E1;font-weight:800;background:#E6EFF8;color:#0F172A;line-height:1.25;vertical-align:middle;">
-                ${escapeHtml(String(mp.namaLatin || '').replace(/\//g, ' / '))}${mp.masukRapor === false ? ' <span style="font-size:7.5px;color:#92400E;">(Rekap)</span>' : ''}
+              <th colspan="2" style="padding:4px 4px;text-align:center;border:1px solid #CBD5E1;font-weight:800;background:#E6EFF8;color:#0F172A;line-height:1.2;vertical-align:middle;font-size:${mapelCount >= 8 ? 7.2 : headerFontSize}px;overflow:hidden;">
+                <div style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word;">
+                  ${escapeHtml(String(mp.namaLatin || '').replace(/\//g, ' / '))}${mp.masukRapor === false ? ' <span style="font-size:7px;color:#92400E;">(Rekap)</span>' : ''}
+                </div>
               </th>
             `
           )
@@ -398,9 +404,9 @@ export function RekapNilaiView({
 
       const buildRowHtml = (row: any, idx: number) => `
         <tr style="font-size:${baseFontSize}px;">
-          <td style="padding:${cellPad};text-align:center;border:1px solid #CBD5E1;color:#475569;background:#F8FAFC;">${idx + 1}</td>
-          <td style="padding:${cellPad};text-align:left;border:1px solid #CBD5E1;font-weight:800;color:#0F172A;text-transform:uppercase;line-height:1.2;word-break:break-word;">${escapeHtml(row.santri.namaLengkap)}</td>
-          <td style="padding:${cellPad};text-align:center;border:1px solid #CBD5E1;font-weight:700;color:#334155;">${escapeHtml(row.namaKelas)}</td>
+          <td style="padding:${cellPad};text-align:center;border:1px solid #CBD5E1;color:#475569;background:#F8FAFC;white-space:nowrap;">${idx + 1}</td>
+          <td style="padding:${cellPad};text-align:left;border:1px solid #CBD5E1;font-weight:800;color:#0F172A;text-transform:uppercase;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(row.santri.namaLengkap)}</td>
+          <td style="padding:${cellPad};text-align:center;border:1px solid #CBD5E1;font-weight:700;color:#334155;white-space:nowrap;">${escapeHtml(row.namaKelas)}</td>
           ${activeMapelFiltered
           .map((mp) => {
             const sc = row.mapelScores[mp.id];
@@ -423,27 +429,34 @@ export function RekapNilaiView({
                 : 'background:#FFFFFF;color:#334155;border:1px solid #CBD5E1;';
 
             return `
-              <td style="padding:${cellPad};text-align:center;font-family:monospace;font-weight:800;${scoreStyle}">${escapeHtml(valDisplay)}</td>
-              <td style="padding:${cellPad};text-align:center;line-height:1.15;${predStyle}">${escapeHtml(predDisplay)}</td>
+              <td style="padding:${cellPad};text-align:center;font-family:monospace;font-weight:800;white-space:nowrap;${scoreStyle}">${escapeHtml(valDisplay)}</td>
+              <td style="padding:${cellPad};text-align:center;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${predStyle}">${escapeHtml(predDisplay)}</td>
             `;
           })
           .join('')}
-          <td style="padding:${cellPad};text-align:center;border:1px solid #CBD5E1;font-family:monospace;font-weight:800;color:#0F172A;background:#F8FAFC;">
+          <td style="padding:${cellPad};text-align:center;border:1px solid #CBD5E1;font-family:monospace;font-weight:800;color:#0F172A;background:#F8FAFC;white-space:nowrap;">
             ${row.filledCount > 0 ? row.totalScore.toFixed(2) : '—'}
           </td>
-          <td style="padding:${cellPad};text-align:center;border:1px solid #CBD5E1;font-family:monospace;font-weight:800;${row.filledCount > 0 && row.averageScore < 2.7
+          <td style="padding:${cellPad};text-align:center;border:1px solid #CBD5E1;font-family:monospace;font-weight:800;white-space:nowrap;${row.filledCount > 0 && row.averageScore < 2.7
           ? 'background:#FEE2E2;color:#991B1B;border-color:#FCA5A5;'
           : 'background:#F8FAFC;color:#064E3B;'
         }">
             ${row.filledCount > 0 ? row.averageScore.toFixed(2) : '—'}
           </td>
-          <td style="padding:${cellPad};text-align:center;border:1px solid #CBD5E1;font-weight:800;color:#0F172A;background:#FFFBEB;">
+          <td style="padding:${cellPad};text-align:center;border:1px solid #CBD5E1;font-weight:800;color:#0F172A;background:#FFFBEB;white-space:nowrap;">
             ${escapeHtml(row.rank)}
           </td>
         </tr>
       `;
 
-      // Tahap 1: Ukur tinggi baris pada lebar konten A4 Landscape (1071px) untuk paginasi presisi
+      const buildFooterHtml = (pageNum: number, totalPages: number) => `
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:8.5px;color:#64748B;border-top:1px solid #E2E8F0;padding-top:5px;margin-top:6px;">
+          <span>E-Rapor Pesantren • Pondok Pesantren Bali Bina Insani</span>
+          <span>Format F4 Landscape (330 × 215 mm) • Halaman ${pageNum} dari ${totalPages}</span>
+        </div>
+      `;
+
+      // Tahap 1: Ukur tinggi baris pada lebar konten F4 Landscape (1195px) untuk paginasi presisi
       measureStage = document.createElement('div');
       measureStage.style.position = 'fixed';
       measureStage.style.top = '0px';
@@ -461,26 +474,30 @@ export function RekapNilaiView({
             ${rekapRows.map((row, idx) => buildRowHtml(row, idx)).join('')}
           </tbody>
         </table>
+        <div id="pdf-measure-footer" style="width:${innerWidth}px;">${buildFooterHtml(1, 1)}</div>
       `;
       document.body.appendChild(measureStage);
 
       const measureTable = measureStage.querySelector('#pdf-measure-table') as HTMLElement;
       const measureHeader = measureStage.querySelector('#pdf-measure-header') as HTMLElement;
+      const measureFooter = measureStage.querySelector('#pdf-measure-footer') as HTMLElement;
 
       const headerH = measureHeader ? measureHeader.offsetHeight + 8 : 72;
       const theadEl = measureTable?.querySelector('thead') as HTMLElement | null;
-      const theadH = theadEl ? theadEl.offsetHeight : 32;
-      const footerH = 26;
+      const theadH = theadEl ? theadEl.offsetHeight : 44;
+      const footerH = measureFooter ? measureFooter.offsetHeight + 6 : 26;
+      const safeBottomMargin = 6;
+      const maxContentHeight = innerMaxHeight - safeBottomMargin; // 755px
       const rowEls = Array.from(measureTable?.querySelectorAll('tbody tr') || []) as HTMLElement[];
 
-      // Kelompokkan baris per halaman agar tidak terpotong di batas bawah halaman
+      // Kelompokkan baris per halaman agar tidak terpotong di batas bawah halaman dan tidak menimpa footer
       const pages: Array<Array<{ row: any; idx: number }>> = [];
       let currentPageRows: Array<{ row: any; idx: number }> = [];
       let usedH = headerH + theadH + footerH;
 
       for (let i = 0; i < rekapRows.length; i++) {
         const rowH = rowEls[i] ? rowEls[i].offsetHeight : 24;
-        if (currentPageRows.length > 0 && usedH + rowH > innerMaxHeight) {
+        if (currentPageRows.length > 0 && usedH + rowH > maxContentHeight) {
           pages.push(currentPageRows);
           currentPageRows = [{ row: rekapRows[i], idx: i }];
           usedH = headerH + theadH + footerH + rowH;
@@ -500,7 +517,7 @@ export function RekapNilaiView({
 
       window.scrollTo(0, 0);
 
-      // Tahap 2: Render setiap halaman ke stageContainer dengan rasio persis A4 Landscape (297:210)
+      // Tahap 2: Render setiap halaman ke stageContainer dengan rasio persis F4 Landscape (330:215)
       stageContainer = document.createElement('div');
       stageContainer.setAttribute('dir', 'ltr');
       stageContainer.style.position = 'fixed';
@@ -543,10 +560,7 @@ export function RekapNilaiView({
               </tbody>
             </table>
           </div>
-          <div style="display:flex;justify-content:space-between;align-items:center;font-size:8.5px;color:#64748B;border-top:1px solid #E2E8F0;padding-top:5px;margin-top:6px;">
-            <span>E-Rapor Pesantren • Pondok Pesantren Bali Bina Insani</span>
-            <span>Format A4 Landscape • Halaman ${p + 1} dari ${pages.length}</span>
-          </div>
+          ${buildFooterHtml(p + 1, pages.length)}
         `;
 
         stageContainer.appendChild(pageEl);
@@ -574,7 +588,7 @@ export function RekapNilaiView({
             pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
             jsPDF: {
               unit: 'mm',
-              format: 'a4',
+              format: [330, 215],
               orientation: 'landscape'
             }
           })
@@ -595,24 +609,29 @@ export function RekapNilaiView({
             pdfInstance.deletePage(pdfInstance.internal.getNumberOfPages());
           }
           if (pdfInstance) {
-            pdfInstance.addPage('a4', 'landscape');
+            pdfInstance.addPage([330, 215], 'landscape');
             pdfInstance.deletePage(1);
             pdfInstance.setPage(1);
-            pdfInstance.addImage(imgData, 'JPEG', 0, 0, 297, 210);
+            pdfInstance.addImage(imgData, 'JPEG', 0, 0, 330, 215);
           }
         } else if (pdfInstance) {
-          pdfInstance.addPage('a4', 'landscape');
+          pdfInstance.addPage([330, 215], 'landscape');
           pdfInstance.setPage(pdfInstance.internal.getNumberOfPages());
-          pdfInstance.addImage(imgData, 'JPEG', 0, 0, 297, 210);
+          pdfInstance.addImage(imgData, 'JPEG', 0, 0, 330, 215);
         }
       }
 
       if (pdfInstance) {
+        const pageW = Math.round(pdfInstance.internal.pageSize.getWidth());
+        const pageH = Math.round(pdfInstance.internal.pageSize.getHeight());
+        if (pageW !== 330 || pageH !== 215) {
+          console.warn(`Ukuran halaman PDF terdeteksi ${pageW}x${pageH}mm, diharapkan 330x215mm`);
+        }
         pdfInstance.save(fileName);
       }
 
       if (showToast) {
-        showToast(`PDF A4 Landscape (${fileName}) berhasil diunduh!`, 'success');
+        showToast(`PDF F4 Landscape (${fileName}) berhasil diunduh!`, 'success');
       }
     } catch (err) {
       if (showToast) {
@@ -690,13 +709,13 @@ export function RekapNilaiView({
             <span>Download Excel</span>
           </button>
 
-          {/* TOMBOL DOWNLOAD PDF (A4 LANDSCAPE) */}
+          {/* TOMBOL DOWNLOAD PDF (F4 LANDSCAPE) */}
           <button
             type="button"
             onClick={handleDownloadPdf}
             disabled={isGeneratingPdf || rekapRows.length === 0}
             className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition disabled:opacity-50 cursor-pointer"
-            title="Download Rekap Nilai format PDF A4 Landscape"
+            title="Download Rekap Nilai format PDF F4 Landscape"
           >
             {isGeneratingPdf ? (
               <>
