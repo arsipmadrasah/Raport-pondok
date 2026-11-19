@@ -312,15 +312,32 @@ export function RekapNilaiView({
       const cellPad = mapelCount <= 5 ? '5px 5px' : mapelCount <= 7 ? '4.5px 4px' : '3.5px 3px';
 
       const noW = 24;
-      const namaW = mapelCount <= 5 ? 175 : mapelCount <= 7 ? 155 : 135;
-      const kelasW = 34;
+      const namaW = mapelCount <= 5 ? 180 : mapelCount <= 7 ? 160 : 140;
+      const kelasW = 32;
       const jumlahW = 44;
-      const rataW = 44;
-      const rankW = 42;
+      const rataW = 48;
+      const rankW = 50;
       const fixedW = noW + namaW + kelasW + jumlahW + rataW + rankW;
       const perMapelW = Math.floor((innerWidth - fixedW) / mapelCount);
-      const scoreColW = Math.floor(perMapelW * 0.44);
+      const scoreColW = Math.floor(perMapelW * 0.42);
       const predColW = perMapelW - scoreColW;
+
+      const buildColgroupHtml = () => `
+        <colgroup>
+          <col style="width:${noW}px;" />
+          <col style="width:${namaW}px;" />
+          <col style="width:${kelasW}px;" />
+          ${activeMapelFiltered
+          .map(
+            () =>
+              `<col style="width:${scoreColW}px;" /><col style="width:${predColW}px;" />`
+          )
+          .join('')}
+          <col style="width:${jumlahW}px;" />
+          <col style="width:${rataW}px;" />
+          <col style="width:${rankW}px;" />
+        </colgroup>
+      `;
 
       const buildHeaderHtml = (pageNum: number, totalPages: number) => `
         <div style="margin-bottom:8px;border-bottom:2px solid #064E3B;padding-bottom:6px;display:flex;justify-content:space-between;align-items:flex-end;gap:12px;">
@@ -350,24 +367,31 @@ export function RekapNilaiView({
       const buildTheadHtml = () => `
         <thead>
           <tr style="background:#EEF2F6;color:#1E293B;font-size:${headerFontSize}px;">
-            <th style="padding:${cellPad};text-align:center;border:1px solid #CBD5E1;font-weight:800;width:${noW}px;">No</th>
-            <th style="padding:${cellPad};text-align:left;border:1px solid #CBD5E1;font-weight:800;width:${namaW}px;">NAMA</th>
-            <th style="padding:${cellPad};text-align:center;border:1px solid #CBD5E1;font-weight:800;width:${kelasW}px;">Kelas</th>
+            <th rowspan="2" style="padding:${cellPad};text-align:center;border:1px solid #CBD5E1;font-weight:800;vertical-align:middle;">No</th>
+            <th rowspan="2" style="padding:${cellPad};text-align:left;border:1px solid #CBD5E1;font-weight:800;vertical-align:middle;">NAMA</th>
+            <th rowspan="2" style="padding:${cellPad};text-align:center;border:1px solid #CBD5E1;font-weight:800;vertical-align:middle;">Kelas</th>
             ${activeMapelFiltered
           .map(
             (mp) => `
-              <th style="padding:${cellPad};text-align:center;border:1px solid #CBD5E1;font-weight:800;background:#E6EFF8;color:#0F172A;width:${scoreColW}px;line-height:1.15;word-break:break-word;">
-                ${escapeHtml(mp.namaLatin)}${mp.masukRapor === false ? ' <span style="font-size:7.5px;color:#92400E;">(Rekap)</span>' : ''}
-              </th>
-              <th style="padding:${cellPad};text-align:center;border:1px solid #CBD5E1;font-weight:700;background:#EEF2F6;color:#475569;width:${predColW}px;line-height:1.15;">
-                Predikat
+              <th colspan="2" style="padding:4px 5px;text-align:center;border:1px solid #CBD5E1;font-weight:800;background:#E6EFF8;color:#0F172A;line-height:1.25;vertical-align:middle;">
+                ${escapeHtml(String(mp.namaLatin || '').replace(/\//g, ' / '))}${mp.masukRapor === false ? ' <span style="font-size:7.5px;color:#92400E;">(Rekap)</span>' : ''}
               </th>
             `
           )
           .join('')}
-            <th style="padding:${cellPad};text-align:center;border:1px solid #CBD5E1;font-weight:800;background:#E2E8F0;color:#0F172A;width:${jumlahW}px;">Jumlah</th>
-            <th style="padding:${cellPad};text-align:center;border:1px solid #CBD5E1;font-weight:800;background:#E2E8F0;color:#0F172A;width:${rataW}px;">Rata-rata</th>
-            <th style="padding:${cellPad};text-align:center;border:1px solid #CBD5E1;font-weight:800;background:#FEF3C7;color:#78350F;width:${rankW}px;">Peringkat</th>
+            <th rowspan="2" style="padding:${cellPad};text-align:center;border:1px solid #CBD5E1;font-weight:800;background:#E2E8F0;color:#0F172A;vertical-align:middle;">Jumlah</th>
+            <th rowspan="2" style="padding:${cellPad};text-align:center;border:1px solid #CBD5E1;font-weight:800;background:#E2E8F0;color:#0F172A;vertical-align:middle;">Rata-rata</th>
+            <th rowspan="2" style="padding:${cellPad};text-align:center;border:1px solid #CBD5E1;font-weight:800;background:#FEF3C7;color:#78350F;vertical-align:middle;">Peringkat</th>
+          </tr>
+          <tr style="background:#F8FAFC;color:#475569;font-size:${Math.max(headerFontSize - 0.5, 7)}px;">
+            ${activeMapelFiltered
+          .map(
+            () => `
+              <th style="padding:3px 2px;text-align:center;border:1px solid #CBD5E1;font-weight:700;background:#EFF6FF;color:#1E3A8A;">Nilai</th>
+              <th style="padding:3px 2px;text-align:center;border:1px solid #CBD5E1;font-weight:700;background:#F1F5F9;color:#475569;">Predikat</th>
+            `
+          )
+          .join('')}
           </tr>
         </thead>
       `;
@@ -431,6 +455,7 @@ export function RekapNilaiView({
       measureStage.innerHTML = `
         <div id="pdf-measure-header" style="width:${innerWidth}px;">${buildHeaderHtml(1, 1)}</div>
         <table id="pdf-measure-table" style="border-collapse:collapse;table-layout:fixed;width:${innerWidth}px;">
+          ${buildColgroupHtml()}
           ${buildTheadHtml()}
           <tbody>
             ${rekapRows.map((row, idx) => buildRowHtml(row, idx)).join('')}
@@ -511,6 +536,7 @@ export function RekapNilaiView({
           <div>
             ${buildHeaderHtml(p + 1, pages.length)}
             <table style="width:${innerWidth}px;table-layout:fixed;border-collapse:collapse;">
+              ${buildColgroupHtml()}
               ${buildTheadHtml()}
               <tbody>
                 ${pages[p].map((item) => buildRowHtml(item.row, item.idx)).join('')}
