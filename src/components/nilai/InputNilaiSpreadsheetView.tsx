@@ -130,8 +130,8 @@ export function InputNilaiSpreadsheetView({
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden space-y-4">
-      <div className="p-4 sm:p-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <div className="bg-white rounded-xl border-2 border-slate-900 shadow-[4px_4px_0px_#0F172A] overflow-hidden">
+      <div className="p-4 sm:p-5 border-b-2 border-slate-900 bg-slate-50/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
           <select
             value={selectedKelasId}
@@ -202,7 +202,7 @@ export function InputNilaiSpreadsheetView({
           )}
           <button
             onClick={handleSaveSpreadsheet}
-            className="w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-sm"
+            className="w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-xl bg-[#064E3B] hover:bg-emerald-900 text-white text-xs font-bold border-2 border-slate-900 shadow-[2px_2px_0px_#0F172A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer flex items-center justify-center gap-2"
           >
             <Save className="w-4 h-4" />
             <span>Simpan Nilai (0.00 – 4.00)</span>

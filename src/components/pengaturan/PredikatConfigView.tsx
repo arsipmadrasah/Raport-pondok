@@ -78,13 +78,13 @@ export function PredikatConfigView({
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden space-y-4">
-      <div className="p-4 sm:p-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <div className="bg-white rounded-xl border-2 border-slate-900 shadow-[4px_4px_0px_#0F172A] overflow-hidden">
+      <div className="p-4 sm:p-5 border-b-2 border-slate-900 bg-slate-50/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h3 className="font-bold text-sm text-slate-900">
+          <h3 className="font-black text-sm text-slate-950">
             Skala &amp; Standar Predikat Nilai Pesantren (0.00 – 4.00)
           </h3>
-          <p className="text-[11px] text-slate-500">
+          <p className="text-[11px] text-slate-600">
             Nilai di bawah 2.70 dikategorikan <b>Dhoif</b> dan otomatis ditandai merah pada rekap nilai &amp; lembar rapor.
           </p>
         </div>
@@ -94,7 +94,7 @@ export function PredikatConfigView({
               <button
                 type="button"
                 onClick={handleResetDefault}
-                className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition"
+                className="px-3 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-800 border-2 border-slate-900 shadow-[2px_2px_0px_#0F172A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none text-xs font-bold transition-all cursor-pointer"
               >
                 Reset Default
               </button>
@@ -104,7 +104,7 @@ export function PredikatConfigView({
                   setDraftRules(predikatList);
                   setIsEditing(false);
                 }}
-                className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition"
+                className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 border-2 border-slate-900 shadow-[2px_2px_0px_#0F172A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none text-xs font-bold transition-all cursor-pointer"
               >
                 Batal
               </button>
@@ -112,7 +112,7 @@ export function PredikatConfigView({
                 type="button"
                 disabled={isSaving}
                 onClick={handleSavePredikat}
-                className="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition"
+                className="px-4 py-2 rounded-xl bg-[#064E3B] hover:bg-emerald-900 text-white border-2 border-slate-900 shadow-[2px_2px_0px_#0F172A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
               >
                 <Save className="w-4 h-4" />
                 <span>{isSaving ? 'Menyimpan...' : 'Simpan Predikat'}</span>
@@ -122,7 +122,7 @@ export function PredikatConfigView({
             <button
               type="button"
               onClick={() => setIsEditing(true)}
-              className="px-3.5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition"
+              className="px-3.5 py-2 rounded-xl bg-[#064E3B] hover:bg-emerald-900 text-white border-2 border-slate-900 shadow-[2px_2px_0px_#0F172A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
             >
               <Edit3 className="w-4 h-4" />
               <span>Edit Rentang Predikat</span>
@@ -133,7 +133,7 @@ export function PredikatConfigView({
 
       <div className="overflow-x-auto">
         <table className="w-full text-xs border-collapse">
-          <thead className="bg-slate-50 border-b border-slate-200 text-slate-700">
+          <thead className="bg-[#FEF9C3] border-b-2 border-slate-900 text-slate-950">
             <tr>
               <th className="py-3 px-4 text-left font-bold min-w-[140px]">Rentang Nilai</th>
               <th className="py-3 px-4 text-left font-bold min-w-[130px]">Predikat Latin</th>

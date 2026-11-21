@@ -1771,7 +1771,7 @@ export default function App() {
             activeMenu === 'cetak-rapor') && (
               <div className="space-y-4">
                 {/* SUB-NAVIGATION TAB BAR */}
-                <div className="no-print bg-white rounded-2xl border border-slate-200/90 p-1.5 shadow-xs flex items-center gap-1.5 overflow-x-auto">
+                <div className="no-print bg-white rounded-xl border-2 border-slate-900 p-1.5 shadow-[3px_3px_0px_#0F172A] flex items-center gap-1.5 overflow-x-auto">
                   {[
                     { id: 'input-nilai', label: 'Input Nilai', icon: FileSpreadsheet },
                     { id: 'rekap-nilai', label: 'Rekap Nilai', icon: TableProperties },
@@ -1784,9 +1784,9 @@ export default function App() {
                         key={tab.id}
                         type="button"
                         onClick={() => handleNavigate('nilai-rapor', tab.id)}
-                        className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${isActive
-                          ? 'bg-[#064E3B] text-white shadow-xs'
-                          : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs transition-all whitespace-nowrap cursor-pointer ${isActive
+                          ? 'bg-[#FEF08A] text-slate-950 font-black border-2 border-slate-900 shadow-[2px_2px_0px_#0F172A]'
+                          : 'font-bold text-slate-700 hover:bg-slate-100 hover:text-slate-950 border-2 border-transparent'
                           }`}
                       >
                         <Icon className="w-4 h-4" />
@@ -1862,7 +1862,7 @@ export default function App() {
             activeMenu === 'pengaturan-pondok') && (
               <div className="space-y-4">
                 {/* SUB-NAVIGATION TAB BAR */}
-                <div className="no-print bg-white rounded-2xl border border-slate-200/90 p-1.5 shadow-xs flex items-center gap-1.5 overflow-x-auto">
+                <div className="no-print bg-white rounded-xl border-2 border-slate-900 p-1.5 shadow-[3px_3px_0px_#0F172A] flex items-center gap-1.5 overflow-x-auto">
                   {[
                     { id: 'tahun-ajaran', label: 'Tahun Ajaran', icon: Calendar },
                     { id: 'mapel', label: 'Mata Pelajaran / Kitab', icon: BookOpen },
@@ -1876,9 +1876,9 @@ export default function App() {
                         key={tab.id}
                         type="button"
                         onClick={() => handleNavigate('pengaturan', tab.id)}
-                        className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${isActive
-                          ? 'bg-[#064E3B] text-white shadow-xs'
-                          : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs transition-all whitespace-nowrap cursor-pointer ${isActive
+                          ? 'bg-[#FEF08A] text-slate-950 font-black border-2 border-slate-900 shadow-[2px_2px_0px_#0F172A]'
+                          : 'font-bold text-slate-700 hover:bg-slate-100 hover:text-slate-950 border-2 border-transparent'
                           }`}
                       >
                         <Icon className="w-4 h-4" />

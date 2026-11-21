@@ -808,10 +808,10 @@ export function MapelMasterView({
   return (
     <div className="space-y-4">
       {/* FORM INPUT MAPEL BARU DENGAN INTEGRASI KELOMPOK & PERUNTUKAN KELAS */}
-      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3.5">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
+      <div className="bg-white p-4 sm:p-5 rounded-xl border-2 border-slate-900 shadow-[4px_4px_0px_#0F172A] space-y-3.5">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b-2 border-slate-900/10 pb-2.5">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold shrink-0">
+            <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-900 border-2 border-slate-900 flex items-center justify-center font-bold shrink-0">
               <BookOpen className="w-4 h-4" />
             </div>
             <div>
@@ -825,7 +825,7 @@ export function MapelMasterView({
           <button
             type="button"
             onClick={() => setShowAddKelompokModal(true)}
-            className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition shadow-2xs"
+            className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border-2 border-slate-900 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all shadow-[2px_2px_0px_#0F172A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
           >
             <Plus className="w-3.5 h-3.5 text-emerald-700" />
             <span>+ Tambah Kelompok Baru</span>
@@ -910,7 +910,7 @@ export function MapelMasterView({
             <div className="sm:col-span-2">
               <button
                 type="submit"
-                className="w-full px-4 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold flex items-center justify-center gap-1.5 shadow-xs transition cursor-pointer"
+                className="w-full px-4 py-2.5 rounded-xl bg-[#064E3B] hover:bg-emerald-900 text-white font-bold border-2 border-slate-900 shadow-[2px_2px_0px_#0F172A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none flex items-center justify-center gap-1.5 transition-all cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
                 <span>+ Tambah Kitab</span>
@@ -1564,8 +1564,8 @@ export function MapelMasterView({
       )}
 
       {/* FILTER & TABEL DAFTAR MATA PELAJARAN */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-        <div className="p-3.5 sm:p-4 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2.5">
+      <div className="bg-white rounded-xl border-2 border-slate-900 shadow-[4px_4px_0px_#0F172A] overflow-hidden">
+        <div className="p-3.5 sm:p-4 border-b-2 border-slate-900 bg-slate-50/70 flex flex-wrap items-center justify-between gap-2.5">
           <div className="flex items-center gap-2">
             <h3 className="font-bold text-xs sm:text-sm text-slate-900">
               Daftar Kitab & Mata Pelajaran ({filteredMapels.length})
@@ -1614,7 +1614,7 @@ export function MapelMasterView({
 
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
-            <thead className="bg-slate-50 border-b border-slate-200 text-slate-700">
+            <thead className="bg-[#FEF9C3] border-b-2 border-slate-900 text-slate-950">
               <tr>
                 <th className="py-3 px-4 text-center w-12 font-bold">No</th>
                 <th className="py-3 px-4 text-left font-bold">Kelompok</th>

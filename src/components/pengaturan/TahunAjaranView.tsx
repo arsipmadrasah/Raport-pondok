@@ -217,7 +217,7 @@ export function TahunAjaranView({
     <div className="space-y-4">
       <form
         onSubmit={handleAddTahunAjaran}
-        className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3 text-xs"
+        className="bg-white p-4 sm:p-5 rounded-xl border-2 border-slate-900 shadow-[4px_4px_0px_#0F172A] space-y-3 text-xs"
       >
         <div className="flex items-center justify-between">
           <h3 className="font-bold text-sm text-slate-900">
@@ -261,7 +261,7 @@ export function TahunAjaranView({
           <div className="flex items-end">
             <button
               type="submit"
-              className="w-full py-2.5 px-4 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold flex items-center justify-center gap-1.5 shadow-sm"
+              className="w-full py-2.5 px-4 rounded-xl bg-[#064E3B] hover:bg-emerald-900 text-white font-bold border-2 border-slate-900 shadow-[2px_2px_0px_#0F172A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer flex items-center justify-center gap-1.5"
             >
               <Plus className="w-4 h-4" />
               <span>Tambah Tahun Pelajaran</span>
@@ -270,7 +270,7 @@ export function TahunAjaranView({
         </div>
       </form>
 
-      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs space-y-4 text-xs">
+      <div className="bg-white p-4 sm:p-5 rounded-xl border-2 border-slate-900 shadow-[4px_4px_0px_#0F172A] space-y-4 text-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
           <div>
             <h3 className="font-bold text-sm text-slate-900">
@@ -291,9 +291,9 @@ export function TahunAjaranView({
             return (
               <div
                 key={ta.id}
-                className={`p-4 rounded-2xl border transition space-y-3 ${isSelectedTa
-                  ? 'border-emerald-600 bg-emerald-50/30 shadow-xs'
-                  : 'border-slate-200 bg-white'
+                className={`p-4 rounded-xl border-2 transition space-y-3 ${isSelectedTa
+                  ? 'border-slate-900 bg-emerald-50/50 shadow-[3px_3px_0px_#0F172A]'
+                  : 'border-slate-900 bg-white'
                   }`}
               >
                 {isEditing ? (
@@ -371,7 +371,7 @@ export function TahunAjaranView({
                       <button
                         type="button"
                         onClick={() => startEditTa(ta)}
-                        className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold flex items-center gap-1 text-[11px]"
+                        className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-900 border-2 border-slate-900 font-bold flex items-center gap-1 text-[11px] cursor-pointer"
                         title="Edit Tahun Pelajaran"
                       >
                         <Edit3 className="w-3.5 h-3.5 text-emerald-700" />
@@ -381,7 +381,7 @@ export function TahunAjaranView({
                         <button
                           type="button"
                           onClick={() => handleDeleteTa(ta)}
-                          className="p-1.5 rounded-xl text-rose-600 hover:bg-rose-50"
+                          className="p-1.5 rounded-xl text-rose-600 hover:bg-rose-50 border-2 border-transparent hover:border-slate-900 cursor-pointer"
                           title="Hapus Tahun Pelajaran"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -400,9 +400,9 @@ export function TahunAjaranView({
                         key={sem.id}
                         type="button"
                         onClick={() => handleActivatePeriode(ta.id, sem.id)}
-                        className={`p-2.5 rounded-xl text-left border transition flex items-center justify-between ${isSemSelected
-                          ? 'bg-emerald-900 text-white border-emerald-900 font-bold shadow-xs'
-                          : 'bg-slate-100/80 hover:bg-slate-200/70 text-slate-800 border-slate-200 font-semibold'
+                        className={`p-2.5 rounded-xl text-left border-2 transition-all flex items-center justify-between cursor-pointer ${isSemSelected
+                          ? 'bg-[#064E3B] text-white border-slate-900 font-bold shadow-[2px_2px_0px_#0F172A]'
+                          : 'bg-slate-50 hover:bg-slate-100 text-slate-800 border-slate-900/20 hover:border-slate-900 font-semibold'
                           }`}
                       >
                         <div>

@@ -301,10 +301,10 @@ export function CetakRaporView({
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* KARTU UTAMA CETAK RAPOR SANTRI */}
-      <div className="no-print bg-white p-5 sm:p-6 rounded-3xl border border-slate-200/90 shadow-xs space-y-4">
+      <div className="no-print bg-white p-5 sm:p-6 rounded-xl border-2 border-slate-900 shadow-[4px_4px_0px_#0F172A] space-y-4">
         {/* HEADER KARTU */}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+          <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white border-2 border-slate-900 shadow-[2px_2px_0px_#0F172A] flex items-center justify-center shrink-0">
             <Printer className="w-5 h-5" />
           </div>
           <div>
@@ -537,7 +537,7 @@ export function CetakRaporView({
             type="button"
             onClick={triggerPrint}
             disabled={selectedEvaluations.length === 0 || isGeneratingPdf}
-            className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-98 text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 cursor-pointer transition"
+            className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-black border-2 border-slate-900 shadow-[3px_3px_0px_#0F172A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer transition-all"
           >
             {isGeneratingPdf ? (
               <>

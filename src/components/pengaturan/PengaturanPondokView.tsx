@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Loader2, Upload, Save, Database, Code2 } from 'lucide-react';
+import { Loader2, Upload, Save } from 'lucide-react';
 import { BaliBinaInsaniLogo } from '../common/BaliBinaInsaniLogo';
 import { compressLogoImageToBase64 } from '../../services/supabase';
 import {
@@ -15,7 +15,7 @@ export function PengaturanPondokView({
   persistPondokProfileToSupabase,
   showToast,
   addLog,
-  onOpenDbModal
+  onOpenDbModal: _onOpenDbModal
 }) {
   const [form, setForm] = useState({ ...pondok });
   const [isSavingLogo, setIsSavingLogo] = useState(false);
@@ -67,10 +67,10 @@ export function PengaturanPondokView({
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div className="w-full">
       <form
         onSubmit={handleSubmit}
-        className="lg:col-span-2 bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4 text-xs"
+        className="w-full bg-white p-5 sm:p-6 rounded-xl border-2 border-slate-900 shadow-[4px_4px_0px_#0F172A] space-y-4 text-xs"
       >
         <h3 className="font-bold text-sm text-slate-900">
           Identitas Pondok Pesantren & Parameter Cetak Rapor
@@ -176,11 +176,11 @@ export function PengaturanPondokView({
           </div>
         </div>
 
-        <div className="pt-2 flex flex-wrap items-center gap-4 p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+        <div className="pt-2 flex flex-wrap items-center gap-4 p-3.5 rounded-xl bg-slate-50 border-2 border-slate-900">
           <BaliBinaInsaniLogo size={68} customLogoUrl={form.logoUrl} />
           <div className="space-y-1.5">
             <div className="flex flex-wrap items-center gap-2">
-              <label className="px-3.5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold cursor-pointer inline-flex items-center gap-2">
+              <label className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold border-2 border-slate-900 shadow-[2px_2px_0px_#0F172A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer inline-flex items-center gap-2">
                 {isSavingLogo ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
@@ -203,7 +203,7 @@ export function PengaturanPondokView({
                 <button
                   type="button"
                   onClick={handleResetDefaultLogo}
-                  className="px-3 py-2 rounded-xl bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 font-semibold"
+                  className="px-3 py-2 rounded-xl bg-white border-2 border-slate-900 hover:bg-slate-100 text-slate-800 font-bold shadow-[2px_2px_0px_#0F172A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer"
                 >
                   Gunakan Logo Vektor Bawaan
                 </button>
@@ -222,33 +222,12 @@ export function PengaturanPondokView({
 
         <button
           type="submit"
-          className="px-5 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold flex items-center gap-2"
+          className="px-5 py-2.5 rounded-xl bg-[#064E3B] hover:bg-emerald-900 text-white font-bold border-2 border-slate-900 shadow-[3px_3px_0px_#0F172A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer flex items-center gap-2"
         >
           <Save className="w-4 h-4" />
           <span>Simpan Seluruh Pengaturan ke Supabase</span>
         </button>
       </form>
-
-      <div className="bg-emerald-950 text-emerald-50 p-5 sm:p-6 rounded-2xl space-y-3 h-fit">
-        <div className="flex items-center gap-2 text-amber-400 font-bold text-sm">
-          <Database className="w-4 h-4" />
-          <span>Database Supabase PostgreSQL</span>
-        </div>
-        <p className="text-xs text-emerald-200 leading-relaxed">
-          Project URL: <code>gpjnbtgyzptxjxdnsctn.supabase.co</code>
-        </p>
-        <p className="text-[11px] text-emerald-300/90 leading-relaxed">
-          Tabel: <code>public.pondok_profile</code> (Kolom: <code>logo_url</code>)
-        </p>
-        <button
-          type="button"
-          onClick={onOpenDbModal}
-          className="w-full py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-emerald-950 font-bold text-xs flex items-center justify-center gap-2"
-        >
-          <Code2 className="w-4 h-4" />
-          <span>Buka Panel SQL Migration</span>
-        </button>
-      </div>
     </div>
   );
 }

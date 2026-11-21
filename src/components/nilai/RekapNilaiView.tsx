@@ -794,9 +794,9 @@ export function RekapNilaiView({
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden space-y-4">
+    <div className="bg-white rounded-xl border-2 border-slate-900 shadow-[4px_4px_0px_#0F172A] overflow-hidden">
       {/* TOOLBAR ATAS: SELECTOR KELAS, SEARCH, INDIKATOR MERAH, TOMBOL AKSI */}
-      <div className="p-4 sm:p-5 border-b border-slate-200/90 flex flex-wrap items-center justify-between gap-3 bg-slate-50/50">
+      <div className="p-4 sm:p-5 border-b-2 border-slate-900 flex flex-wrap items-center justify-between gap-3 bg-slate-50/70">
         <div className="flex flex-wrap items-center gap-3">
           {/* PILIH KELAS */}
           <div className="flex items-center gap-2">
@@ -847,7 +847,7 @@ export function RekapNilaiView({
             type="button"
             onClick={handleDownloadDhoifKosongPdf}
             disabled={isGeneratingDhoifPdf || rekapRows.length === 0}
-            className="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 active:scale-95 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition disabled:opacity-50 cursor-pointer"
+            className="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold border-2 border-slate-900 shadow-[2px_2px_0px_#0F172A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none flex items-center gap-1.5 transition-all disabled:opacity-50 cursor-pointer"
             title="Download PDF daftar santri yang masih memiliki nilai Dhoif (< 2.70) atau Kosong pada kelas terpilih"
           >
             {isGeneratingDhoifPdf ? (
@@ -868,7 +868,7 @@ export function RekapNilaiView({
             type="button"
             onClick={handleDownloadPdf}
             disabled={isGeneratingPdf || rekapRows.length === 0}
-            className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition disabled:opacity-50 cursor-pointer"
+            className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold border-2 border-slate-900 shadow-[2px_2px_0px_#0F172A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none flex items-center gap-1.5 transition-all disabled:opacity-50 cursor-pointer"
             title="Download Rekap Nilai format PDF F4 Landscape"
           >
             {isGeneratingPdf ? (
@@ -887,7 +887,7 @@ export function RekapNilaiView({
           <button
             type="button"
             onClick={onJumpToInput}
-            className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold transition"
+            className="px-3 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-900 border-2 border-slate-900 shadow-[2px_2px_0px_#0F172A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none text-xs font-bold transition-all cursor-pointer"
           >
             Edit Nilai
           </button>
@@ -895,7 +895,7 @@ export function RekapNilaiView({
           <button
             type="button"
             onClick={onJumpToPrint}
-            className="px-3.5 py-2 rounded-xl bg-[#064E3B] hover:bg-emerald-900 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition"
+            className="px-3.5 py-2 rounded-xl bg-[#064E3B] hover:bg-emerald-900 text-white border-2 border-slate-900 shadow-[2px_2px_0px_#0F172A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
           >
             <Printer className="w-4 h-4" />
             <span>Cetak Rapor</span>
