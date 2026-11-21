@@ -301,3 +301,134 @@ export function exportSantriAndGradesToCSV({
   URL.revokeObjectURL(url);
 }
 
+const MASEHI_MONTH_NAMES_ID = [
+  'Januari',
+  'Februari',
+  'Maret',
+  'April',
+  'Mei',
+  'Juni',
+  'Juli',
+  'Agustus',
+  'September',
+  'Oktober',
+  'November',
+  'Desember'
+];
+
+const MASEHI_MONTH_ALIASES: Record<string, number> = {
+  januari: 0, jan: 0, january: 0,
+  februari: 1, feb: 1, february: 1, pebruari: 1,
+  maret: 2, mar: 2, march: 2,
+  april: 3, apr: 3,
+  mei: 4, may: 4,
+  juni: 5, jun: 5, june: 5,
+  juli: 6, jul: 6, july: 6,
+  agustus: 7, agu: 7, agt: 7, aug: 7, august: 7,
+  september: 8, sep: 8, sept: 8,
+  oktober: 9, okt: 9, oct: 9, october: 9,
+  november: 10, nov: 10, nopember: 10, nop: 10,
+  desember: 11, des: 11, dec: 11, december: 11
+};
+
+const HIJRI_MONTH_NAMES_ID = [
+  'Muharram',
+  'Safar',
+  'Rabiul Awal',
+  'Rabiul Akhir',
+  'Jumadil Awal',
+  'Jumadil Akhir',
+  'Rajab',
+  "Sya'ban",
+  'Ramadhan',
+  'Syawal',
+  "Dzulqa'dah",
+  'Dzulhijjah'
+];
+
+/**
+ * Parse tanggal Masehi format Indonesia ("19 Desember 2026", "19 Desember 2026M"),
+ * ISO ("2026-12-19"), atau DD/MM/YYYY menjadi Date UTC.
+ */
+export function parseIndonesianMasehiDate(input: string): Date | null {
+  const clean = String(input || '').trim();
+  if (!clean) return null;
+
+  const isoMatch = clean.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (isoMatch) {
+    const y = Number(isoMatch[1]);
+    const m = Number(isoMatch[2]) - 1;
+    const d = Number(isoMatch[3]);
+    const dt = new Date(Date.UTC(y, m, d, 12, 0, 0));
+    if (dt.getUTCFullYear() === y && dt.getUTCMonth() === m && dt.getUTCDate() === d) return dt;
+    return null;
+  }
+
+  const slashMatch = clean.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+  if (slashMatch) {
+    const d = Number(slashMatch[1]);
+    const m = Number(slashMatch[2]) - 1;
+    const y = Number(slashMatch[3]);
+    const dt = new Date(Date.UTC(y, m, d, 12, 0, 0));
+    if (dt.getUTCFullYear() === y && dt.getUTCMonth() === m && dt.getUTCDate() === d) return dt;
+    return null;
+  }
+
+  const textMatch = clean.match(/^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})\s*[Mm]?$/);
+  if (textMatch) {
+    const d = Number(textMatch[1]);
+    const monthKey = textMatch[2].toLowerCase();
+    const y = Number(textMatch[3]);
+    const m = MASEHI_MONTH_ALIASES[monthKey];
+    if (m === undefined || y < 1900 || y > 2100) return null;
+    const dt = new Date(Date.UTC(y, m, d, 12, 0, 0));
+    if (dt.getUTCFullYear() === y && dt.getUTCMonth() === m && dt.getUTCDate() === d) return dt;
+  }
+
+  return null;
+}
+
+/** Format Date UTC menjadi string rapor Masehi baku, misal "19 Desember 2026M". */
+export function formatMasehiRaporString(date: Date): string {
+  const d = date.getUTCDate();
+  const m = MASEHI_MONTH_NAMES_ID[date.getUTCMonth()];
+  const y = date.getUTCFullYear();
+  return `${d} ${m} ${y}M`;
+}
+
+/** Format Date UTC menjadi nilai input[type="date"] ("YYYY-MM-DD"). */
+export function toInputDateValue(date: Date): string {
+  const y = date.getUTCFullYear();
+  const m = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(date.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+/** Konversi Date Masehi menjadi string Hijriyah baku untuk rapor, misal "10 Rajab 1448H". */
+export function convertMasehiToHijriyahString(date: Date): string {
+  const calendars = ['en-u-ca-islamic-umalqura-nu-latn', 'en-u-ca-islamic-nu-latn'];
+  for (const locale of calendars) {
+    try {
+      const fmt = new Intl.DateTimeFormat(locale, {
+        timeZone: 'UTC',
+        day: 'numeric',
+        month: 'numeric',
+        year: 'numeric'
+      });
+      const parts = fmt.formatToParts(date);
+      const hDay = Number(parts.find((p) => p.type === 'day')?.value);
+      const hMonth = Number(parts.find((p) => p.type === 'month')?.value);
+      const hYear = Number(parts.find((p) => p.type === 'year')?.value);
+
+      if (hDay >= 1 && hDay <= 30 && hMonth >= 1 && hMonth <= 12 && hYear >= 1300 && hYear <= 1600) {
+        const monthName = HIJRI_MONTH_NAMES_ID[hMonth - 1];
+        return `${hDay} ${monthName} ${hYear}H`;
+      }
+    } catch (_) {
+      // Lanjut ke fallback kalender berikutnya
+    }
+  }
+  return '';
+}
+
+

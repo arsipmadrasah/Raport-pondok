@@ -2,6 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Loader2, Upload, Save, Database, Code2 } from 'lucide-react';
 import { BaliBinaInsaniLogo } from '../common/BaliBinaInsaniLogo';
 import { compressLogoImageToBase64 } from '../../services/supabase';
+import {
+  parseIndonesianMasehiDate,
+  formatMasehiRaporString,
+  convertMasehiToHijriyahString,
+  toInputDateValue
+} from '../../utils/academicHelpers';
 
 export function PengaturanPondokView({
   pondok,
@@ -110,19 +116,61 @@ export function PengaturanPondokView({
           </div>
           <div>
             <label className="font-semibold text-slate-700">Tanggal Rapor (Masehi)</label>
-            <input
-              type="text"
-              value={form.tanggalCetakMasehi}
-              onChange={(e) => setForm({ ...form, tanggalCetakMasehi: e.target.value })}
-              className="w-full mt-1 px-3 py-2 rounded-xl border border-slate-300"
-            />
+            <div className="mt-1 flex items-center gap-2">
+              <input
+                type="text"
+                value={form.tanggalCetakMasehi}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  const parsed = parseIndonesianMasehiDate(val);
+                  const autoHijri = parsed ? convertMasehiToHijriyahString(parsed) : '';
+                  setForm({
+                    ...form,
+                    tanggalCetakMasehi: val,
+                    ...(autoHijri ? { tanggalCetakHijriyah: autoHijri } : {})
+                  });
+                }}
+                placeholder="Misal: 19 Desember 2026M"
+                className="flex-1 min-w-0 px-3 py-2 rounded-xl border border-slate-300"
+              />
+              <input
+                type="date"
+                aria-label="Pilih tanggal rapor Masehi"
+                title="Pilih dari kalender untuk konversi otomatis ke Hijriyah"
+                value={(() => {
+                  const parsed = parseIndonesianMasehiDate(form.tanggalCetakMasehi);
+                  return parsed ? toInputDateValue(parsed) : '';
+                })()}
+                onChange={(e) => {
+                  const parsed = parseIndonesianMasehiDate(e.target.value);
+                  if (!parsed) return;
+                  const formattedMasehi = formatMasehiRaporString(parsed);
+                  const autoHijri = convertMasehiToHijriyahString(parsed);
+                  setForm({
+                    ...form,
+                    tanggalCetakMasehi: formattedMasehi,
+                    ...(autoHijri ? { tanggalCetakHijriyah: autoHijri } : {})
+                  });
+                }}
+                className="w-10 sm:w-auto px-2 py-2 rounded-xl border border-slate-300 bg-slate-50 text-slate-700 cursor-pointer"
+              />
+            </div>
+            <p className="text-[10px] text-slate-500 mt-1">
+              Ketik tanggal (mis. 19 Desember 2026) atau pilih kalender; Hijriyah terisi otomatis.
+            </p>
           </div>
           <div>
-            <label className="font-semibold text-slate-700">Tanggal Rapor (Hijriyah)</label>
+            <div className="flex items-center justify-between gap-2">
+              <label className="font-semibold text-slate-700">Tanggal Rapor (Hijriyah)</label>
+              <span className="text-[10px] font-semibold text-emerald-700">
+                Otomatis dari Masehi (bisa diedit)
+              </span>
+            </div>
             <input
               type="text"
               value={form.tanggalCetakHijriyah}
               onChange={(e) => setForm({ ...form, tanggalCetakHijriyah: e.target.value })}
+              placeholder="Misal: 10 Rajab 1448H"
               className="w-full mt-1 px-3 py-2 rounded-xl border border-slate-300"
             />
           </div>
