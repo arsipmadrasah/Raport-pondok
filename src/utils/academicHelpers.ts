@@ -346,71 +346,79 @@ const HIJRI_MONTH_NAMES_ID = [
   'Dzulhijjah'
 ];
 
+const WITA_TIMEZONE = 'Asia/Makassar';
+
+function makeWitaNoonDate(year: number, monthIndex: number, day: number): Date {
+  // 04:00 UTC = 12:00 WITA (siang hari WITA) agar tidak pernah bergeser tanggal
+  return new Date(Date.UTC(year, monthIndex, day, 4, 0, 0));
+}
+
+function getWitaDateParts(date: Date): { year: number; month: number; day: number } {
+  const fmt = new Intl.DateTimeFormat('en-CA', {
+    timeZone: WITA_TIMEZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  });
+  const [y, m, d] = fmt.format(date).split('-').map(Number);
+  return { year: y, month: m, day: d };
+}
+
 /**
  * Parse tanggal Masehi format Indonesia ("19 Desember 2026", "19 Desember 2026M"),
- * ISO ("2026-12-19"), atau DD/MM/YYYY menjadi Date UTC.
+ * ISO ("2026-12-19"), atau DD/MM/YYYY menjadi Date pada zona waktu WITA (Asia/Makassar).
  */
 export function parseIndonesianMasehiDate(input: string): Date | null {
   const clean = String(input || '').trim();
   if (!clean) return null;
 
+  const validateAndBuild = (y: number, m: number, d: number): Date | null => {
+    if (y < 1900 || y > 2100 || m < 0 || m > 11 || d < 1 || d > 31) return null;
+    const dt = makeWitaNoonDate(y, m, d);
+    const parts = getWitaDateParts(dt);
+    if (parts.year === y && parts.month === m + 1 && parts.day === d) return dt;
+    return null;
+  };
+
   const isoMatch = clean.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
   if (isoMatch) {
-    const y = Number(isoMatch[1]);
-    const m = Number(isoMatch[2]) - 1;
-    const d = Number(isoMatch[3]);
-    const dt = new Date(Date.UTC(y, m, d, 12, 0, 0));
-    if (dt.getUTCFullYear() === y && dt.getUTCMonth() === m && dt.getUTCDate() === d) return dt;
-    return null;
+    return validateAndBuild(Number(isoMatch[1]), Number(isoMatch[2]) - 1, Number(isoMatch[3]));
   }
 
   const slashMatch = clean.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
   if (slashMatch) {
-    const d = Number(slashMatch[1]);
-    const m = Number(slashMatch[2]) - 1;
-    const y = Number(slashMatch[3]);
-    const dt = new Date(Date.UTC(y, m, d, 12, 0, 0));
-    if (dt.getUTCFullYear() === y && dt.getUTCMonth() === m && dt.getUTCDate() === d) return dt;
-    return null;
+    return validateAndBuild(Number(slashMatch[3]), Number(slashMatch[2]) - 1, Number(slashMatch[1]));
   }
 
   const textMatch = clean.match(/^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})\s*[Mm]?$/);
   if (textMatch) {
-    const d = Number(textMatch[1]);
-    const monthKey = textMatch[2].toLowerCase();
-    const y = Number(textMatch[3]);
-    const m = MASEHI_MONTH_ALIASES[monthKey];
-    if (m === undefined || y < 1900 || y > 2100) return null;
-    const dt = new Date(Date.UTC(y, m, d, 12, 0, 0));
-    if (dt.getUTCFullYear() === y && dt.getUTCMonth() === m && dt.getUTCDate() === d) return dt;
+    const m = MASEHI_MONTH_ALIASES[textMatch[2].toLowerCase()];
+    if (m === undefined) return null;
+    return validateAndBuild(Number(textMatch[3]), m, Number(textMatch[1]));
   }
 
   return null;
 }
 
-/** Format Date UTC menjadi string rapor Masehi baku, misal "19 Desember 2026M". */
+/** Format Date menjadi string rapor Masehi baku (WITA), misal "19 Desember 2026M". */
 export function formatMasehiRaporString(date: Date): string {
-  const d = date.getUTCDate();
-  const m = MASEHI_MONTH_NAMES_ID[date.getUTCMonth()];
-  const y = date.getUTCFullYear();
-  return `${d} ${m} ${y}M`;
+  const { year, month, day } = getWitaDateParts(date);
+  return `${day} ${MASEHI_MONTH_NAMES_ID[month - 1]} ${year}M`;
 }
 
-/** Format Date UTC menjadi nilai input[type="date"] ("YYYY-MM-DD"). */
+/** Format Date menjadi nilai input[type="date"] ("YYYY-MM-DD") sesuai WITA (Asia/Makassar). */
 export function toInputDateValue(date: Date): string {
-  const y = date.getUTCFullYear();
-  const m = String(date.getUTCMonth() + 1).padStart(2, '0');
-  const d = String(date.getUTCDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
+  const { year, month, day } = getWitaDateParts(date);
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
 
-/** Konversi Date Masehi menjadi string Hijriyah baku untuk rapor, misal "10 Rajab 1448H". */
+/** Konversi Date Masehi menjadi string Hijriyah baku untuk rapor sesuai waktu WITA (Asia/Makassar). */
 export function convertMasehiToHijriyahString(date: Date): string {
   const calendars = ['en-u-ca-islamic-umalqura-nu-latn', 'en-u-ca-islamic-nu-latn'];
   for (const locale of calendars) {
     try {
       const fmt = new Intl.DateTimeFormat(locale, {
-        timeZone: 'UTC',
+        timeZone: WITA_TIMEZONE,
         day: 'numeric',
         month: 'numeric',
         year: 'numeric'
