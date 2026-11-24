@@ -10,7 +10,7 @@ export const SUPABASE_CONFIG = {
       ((import.meta as any).env?.VITE_SUPABASE_ANON_KEY || (import.meta as any).env?.VITE_SUPABASE_PUBLISHABLE_KEY)) || ''
 };
 
-export async function fetchWithTimeout(resource: RequestInfo | URL, options: RequestInit = {}, timeoutMs = 4500) {
+export async function fetchWithTimeout(resource: RequestInfo | URL, options: RequestInit = {}, timeoutMs = 15000) {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -79,18 +79,38 @@ export const SupabaseDB = {
 
   async selectAll(table: string, orderCol: string | null = null, ascending = true) {
     const orderParam = orderCol ? `&order=${orderCol}.${ascending ? 'asc' : 'desc'}` : '';
-    const res = await fetchWithTimeout(
-      `${SUPABASE_CONFIG.url}/rest/v1/${table}?select=*${orderParam}`,
-      {
-        method: 'GET',
-        headers: this.headers()
+    const pageSize = 1000;
+    const allRows: any[] = [];
+    let offset = 0;
+
+    while (true) {
+      const res = await fetchWithTimeout(
+        `${SUPABASE_CONFIG.url}/rest/v1/${table}?select=*${orderParam}&limit=${pageSize}&offset=${offset}`,
+        {
+          method: 'GET',
+          headers: this.headers()
+        }
+      );
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        throw new Error(errBody.message || `HTTP ${res.status} pada tabel ${table}`);
       }
-    );
-    if (!res.ok) {
-      const errBody = await res.json().catch(() => ({}));
-      throw new Error(errBody.message || `HTTP ${res.status} pada tabel ${table}`);
+      const pageRows = await res.json();
+      if (!Array.isArray(pageRows) || pageRows.length === 0) {
+        break;
+      }
+      allRows.push(...pageRows);
+      if (pageRows.length < pageSize) {
+        break;
+      }
+      offset += pageSize;
+      // Safety guard max 25,000 rows
+      if (offset >= 25000) {
+        break;
+      }
     }
-    return await res.json();
+
+    return allRows;
   },
 
   async upsert(table: string, payload: any, onConflict = 'id') {

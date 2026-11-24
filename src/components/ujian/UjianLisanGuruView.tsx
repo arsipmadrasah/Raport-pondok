@@ -283,12 +283,19 @@ export function UjianLisanGuruView({
     showToast(`Ahlan wa Sahlan, ${finalName}. Selamat bertugas!`, 'success');
   };
 
-  const handleBackToSelection = () => {
-    // Kembali ke form pemilihan kelas & kitab tanpa menghapus nama guru
+  const handleBackToSelection = async () => {
+    // Jika masih ada nilai yang belum disimpan, otomatis simpan ke Supabase sebelum ganti kelas/kitab
+    if (unsavedSantriIds.size > 0 && !isSaving) {
+      await handleSaveAllChanges(true);
+    }
     setIsLoggedIn(false);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    // Jika masih ada nilai yang belum disimpan, otomatis simpan ke Supabase sebelum keluar
+    if (unsavedSantriIds.size > 0 && !isSaving) {
+      await handleSaveAllChanges(true);
+    }
     try {
       sessionStorage.removeItem('guru_session_active');
       sessionStorage.removeItem('guru_session_name');
@@ -446,9 +453,36 @@ export function UjianLisanGuruView({
     setUnsavedSantriIds((prev) => new Set(prev).add(santriId));
   };
 
+  // Validasi cerdas input nilai soal (mencegah salah ketik 35 menjadi 4.00 Mumtaz)
+  const handleQuestionInputChange = (
+    santriId: string,
+    questionIndex: number,
+    rawVal: string
+  ) => {
+    const cleaned = String(rawVal ?? '').replace(',', '.').trim();
+    if (cleaned === '') {
+      handleScoreChange(santriId, questionIndex, '');
+      return;
+    }
+    const num = parseFloat(cleaned);
+    if (Number.isNaN(num) || num < 0) return;
+
+    if (num <= 4) {
+      handleScoreChange(santriId, questionIndex, Math.round(num * 100) / 100);
+    } else if (num >= 10 && num <= 40) {
+      // Jika guru mengetik 2 digit tanpa titik (misal 35 maksudnya 3.5, atau 28 maksudnya 2.8)
+      const converted = Math.round((num / 10) * 100) / 100;
+      handleScoreChange(santriId, questionIndex, converted);
+      showToast(`Angka ${num} otomatis disesuaikan menjadi ${converted} (Skala 0 – 4).`, 'success');
+    } else {
+      showToast('Rentang nilai adalah 0.0 s/d 4.0 (contoh: 3.5 atau 2.8)!', 'warning');
+    }
+  };
 
   // Simpan nilai ujian & remedial ke database Supabase
-  const handleSaveAllChanges = async () => {
+  const handleSaveAllChanges = async (isAutoSave: any = false) => {
+    const silent = isAutoSave === true;
+    if (isSaving) return;
     setIsSaving(true);
     try {
       const recordsToSave: Array<{ santriId: string; mapelId: string; angkaNilai: number | null }> = [];
@@ -488,10 +522,12 @@ export function UjianLisanGuruView({
       } catch (_) { }
       unsavedRef.current = new Set();
       setUnsavedSantriIds(new Set());
-      showToast(
-        `Alhamdulillah, nilai ujian & hasil remedial ${selectedMapelObj?.namaLatin || ''} berhasil disimpan ke Supabase!`,
-        'success'
-      );
+      if (!silent) {
+        showToast(
+          `Alhamdulillah, nilai ujian & hasil remedial ${selectedMapelObj?.namaLatin || ''} berhasil disimpan ke Supabase!`,
+          'success'
+        );
+      }
     } catch (err: any) {
       console.error(err);
       showToast(
@@ -502,6 +538,26 @@ export function UjianLisanGuruView({
       setIsSaving(false);
     }
   };
+
+  // Auto-save otomatis ke Supabase 2,5 detik setelah guru selesai mengetik nilai
+  useEffect(() => {
+    if (!isLoggedIn || unsavedSantriIds.size === 0 || isSaving) return;
+    const timer = setTimeout(() => {
+      handleSaveAllChanges(true);
+    }, 2500);
+    return () => clearTimeout(timer);
+  }, [examItems, unsavedSantriIds, isLoggedIn, isSaving]);
+
+  // Proteksi jika guru menutup tab browser saat masih ada nilai yang sedang/belum disimpan
+  useEffect(() => {
+    if (!isLoggedIn || (unsavedSantriIds.size === 0 && !isSaving)) return;
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isLoggedIn, unsavedSantriIds, isSaving]);
 
   const selectedKelasObj = activeKelasList.find((k) => k.id === selectedKelasId);
   const selectedMapelObj = availableMapels.find((m) => m.id === selectedMapelId);
@@ -917,18 +973,7 @@ export function UjianLisanGuruView({
                             inputMode="decimal"
                             placeholder="—"
                             value={val}
-                            onChange={(e) => {
-                              const rawVal = e.target.value;
-                              if (rawVal === '') {
-                                handleScoreChange(santri.id, qIdx, '');
-                              } else {
-                                const num = parseFloat(rawVal);
-                                if (!isNaN(num)) {
-                                  const clamped = Math.min(4, Math.max(0, num));
-                                  handleScoreChange(santri.id, qIdx, clamped);
-                                }
-                              }
-                            }}
+                            onChange={(e) => handleQuestionInputChange(santri.id, qIdx, e.target.value)}
                             className={`w-full text-center py-2.5 rounded-xl border-2 text-base font-black transition shadow-2xs focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-600 focus:bg-white ${val === ''
                               ? 'border-slate-200 bg-slate-50 text-slate-700 placeholder:text-slate-300'
                               : Number(val) >= 2.7
@@ -1059,18 +1104,7 @@ export function UjianLisanGuruView({
                                   inputMode="decimal"
                                   placeholder="—"
                                   value={val}
-                                  onChange={(e) => {
-                                    const rawVal = e.target.value;
-                                    if (rawVal === '') {
-                                      handleScoreChange(santri.id, qIdx, '');
-                                    } else {
-                                      const num = parseFloat(rawVal);
-                                      if (!isNaN(num)) {
-                                        const clamped = Math.min(4, Math.max(0, num));
-                                        handleScoreChange(santri.id, qIdx, clamped);
-                                      }
-                                    }
-                                  }}
+                                  onChange={(e) => handleQuestionInputChange(santri.id, qIdx, e.target.value)}
                                   className={`w-14 text-center py-1.5 rounded-lg border-2 font-black text-sm transition focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white shadow-2xs ${val === ''
                                     ? 'border-slate-300 bg-slate-50/70 text-slate-700 placeholder:text-slate-300'
                                     : Number(val) >= 2.7

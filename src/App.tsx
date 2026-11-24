@@ -313,6 +313,29 @@ export default function App() {
     }
   }, [activeMenu]);
 
+  // Auto-refresh data nilai terbaru dari Supabase setiap berpindah ke Rekap Nilai, Cetak Rapor, Input Nilai, atau Dashboard
+  useEffect(() => {
+    if (isGuruMode) return;
+    if (activeMenu !== 'nilai-rapor' && activeMenu !== 'dashboard') return;
+    let cancelled = false;
+    SupabaseDB.selectAll('nilai')
+      .then((nilaiRows) => {
+        if (cancelled || !Array.isArray(nilaiRows)) return;
+        setNilaiList(
+          nilaiRows.map((n) => ({
+            santriId: n.santri_id,
+            semesterId: n.semester_id,
+            mapelId: n.mapel_id,
+            angkaNilai: n.angka_nilai !== null ? Number(n.angka_nilai) : null
+          }))
+        );
+      })
+      .catch(() => { });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeMenu, activeSubMenu, isGuruMode]);
+
   const headerMeta = useMemo(() => {
     switch (activeMenu) {
       case 'dashboard':
@@ -1006,7 +1029,7 @@ export default function App() {
         );
       }
 
-      if (nilaiRows.length > 0) {
+      if (Array.isArray(nilaiRows)) {
         setNilaiList(
           nilaiRows.map((n) => ({
             santriId: n.santri_id,
