@@ -745,7 +745,12 @@ export default function App() {
         nilaiRows,
         logRows
       ] = await Promise.all([
-        SupabaseDB.selectAll('pondok_profile'),
+        SupabaseDB.selectAll(
+          'pondok_profile',
+          null,
+          true,
+          'id,nama_pondok_latin,nama_pondok_arab,alamat,kabupaten_kota,telepon,email,website,nama_pimpinan,nip_pimpinan,tanggal_cetak_masehi,tanggal_cetak_hijriyah,tanggal_cetak_default'
+        ),
         SupabaseDB.selectAll('tahun_ajaran', 'nama', true),
         SupabaseDB.selectAll('semester', 'angka', true),
         SupabaseDB.selectAll('kelas', 'tingkat', true),
@@ -764,7 +769,8 @@ export default function App() {
 
       if (pondokRows.length > 0) {
         const p = pondokRows[0];
-        setPondok({
+        setPondok((prev) => ({
+          ...prev,
           namaPondokLatin: p.nama_pondok_latin,
           namaPondokArab: p.nama_pondok_arab,
           alamat: p.alamat || '',
@@ -772,13 +778,20 @@ export default function App() {
           telepon: p.telepon || '',
           email: p.email || '',
           website: p.website || '',
-          logoUrl: p.logo_url || '',
           namaPimpinan: p.nama_pimpinan,
           nipPimpinan: p.nip_pimpinan || 'Direktur',
           tanggalCetakMasehi: p.tanggal_cetak_masehi || '20 Juni 2024M',
           tanggalCetakHijriyah: p.tanggal_cetak_hijriyah || '13 Dzulhijjah 1445H',
           tanggalCetakDefault: p.tanggal_cetak_default || '20 Juni 2024M / 13 Dzulhijjah 1445H'
-        });
+        }));
+        // Muat logo kustom secara non-blocking di latar belakang agar loading awal 2 detik lebih cepat
+        SupabaseDB.selectAll('pondok_profile', null, true, 'id,logo_url')
+          .then((logoRows) => {
+            if (logoRows && logoRows[0]?.logo_url) {
+              setPondok((prev) => ({ ...prev, logoUrl: logoRows[0].logo_url }));
+            }
+          })
+          .catch(() => { });
       }
 
       if (taRows.length > 0) {

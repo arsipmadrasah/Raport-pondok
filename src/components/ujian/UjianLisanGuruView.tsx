@@ -334,11 +334,16 @@ export function UjianLisanGuruView({
   // Kunci penyimpanan skor butir soal 1-5 di memori lokal per sesi ujian
   const storageKey = `ujian_syafahi_scores_${selectedSemesterId}_${selectedKelasId}_${selectedMapelId}`;
   const [examItems, setExamItems] = useState<{ [santriId: string]: (number | '')[] }>({});
+  const examItemsRef = useRef<{ [santriId: string]: (number | '')[] }>({});
   const [unsavedSantriIds, setUnsavedSantriIds] = useState<Set<string>>(new Set());
   const prevStorageKeyRef = useRef<string>('');
   const unsavedRef = useRef<Set<string>>(new Set());
   const [isSaving, setIsSaving] = useState(false);
   const [searchKeyword, setSearchKeyword] = useState('');
+
+  useEffect(() => {
+    examItemsRef.current = examItems;
+  }, [examItems]);
 
   // Sinkronkan ref unsaved agar efek rekonsiliasi Supabase tidak menimpa ketikan guru yang belum disimpan
   useEffect(() => {
@@ -485,11 +490,13 @@ export function UjianLisanGuruView({
     if (isSaving) return;
     setIsSaving(true);
     try {
+      const snapshotExamItems = { ...examItemsRef.current };
+      const sentFingerprints = new Map<string, string>();
       const recordsToSave: Array<{ santriId: string; mapelId: string; angkaNilai: number | null }> = [];
 
       // Hanya kirim santri yang punya nilai atau yang nilainya memang dihapus dari database
       santriInKelas.forEach((s) => {
-        const scores = examItems[s.id];
+        const scores = snapshotExamItems[s.id];
         const { avg } = calculateScore(scores);
         const hasExistingInDb = nilaiList.some(
           (n) =>
@@ -499,6 +506,7 @@ export function UjianLisanGuruView({
             n.angkaNilai !== null
         );
         if (avg !== null || hasExistingInDb) {
+          sentFingerprints.set(s.id, JSON.stringify(scores || []));
           recordsToSave.push({
             santriId: s.id,
             mapelId: selectedMapelId,
@@ -518,10 +526,20 @@ export function UjianLisanGuruView({
       }
 
       try {
-        localStorage.setItem(storageKey, JSON.stringify(examItems));
+        localStorage.setItem(storageKey, JSON.stringify(examItemsRef.current));
       } catch (_) { }
-      unsavedRef.current = new Set();
-      setUnsavedSantriIds(new Set());
+
+      // Hanya bersihkan tanda belum tersimpan untuk santri yang nilainya tidak berubah selama proses simpan
+      const remainingUnsaved = new Set<string>();
+      unsavedRef.current.forEach((sid) => {
+        const currentFp = JSON.stringify(examItemsRef.current[sid] || []);
+        const sentFp = sentFingerprints.get(sid);
+        if (sentFp === undefined || currentFp !== sentFp) {
+          remainingUnsaved.add(sid);
+        }
+      });
+      unsavedRef.current = remainingUnsaved;
+      setUnsavedSantriIds(remainingUnsaved);
       if (!silent) {
         showToast(
           `Alhamdulillah, nilai ujian & hasil remedial ${selectedMapelObj?.namaLatin || ''} berhasil disimpan ke Supabase!`,

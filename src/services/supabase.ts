@@ -77,7 +77,7 @@ export const SupabaseDB = {
     };
   },
 
-  async selectAll(table: string, orderCol: string | null = null, ascending = true) {
+  async selectAll(table: string, orderCol: string | null = null, ascending = true, selectCols = '*') {
     const orderParam = orderCol ? `&order=${orderCol}.${ascending ? 'asc' : 'desc'}` : '';
     const pageSize = 1000;
     const allRows: any[] = [];
@@ -85,7 +85,7 @@ export const SupabaseDB = {
 
     while (true) {
       const res = await fetchWithTimeout(
-        `${SUPABASE_CONFIG.url}/rest/v1/${table}?select=*${orderParam}&limit=${pageSize}&offset=${offset}`,
+        `${SUPABASE_CONFIG.url}/rest/v1/${table}?select=${encodeURIComponent(selectCols)}${orderParam}&limit=${pageSize}&offset=${offset}`,
         {
           method: 'GET',
           headers: this.headers()

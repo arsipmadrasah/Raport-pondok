@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { GraduationCap, Save, Edit3, Download, Trash2, ArrowUpRight } from 'lucide-react';
 import { normalizeTingkat } from '../../constants/initialData';
-import { exportSantriAndGradesToCSV } from '../../utils/academicHelpers';
+import { exportSantriAndGradesToCSV, isMapelForKelas } from '../../utils/academicHelpers';
 
 export function KenaikanKelas6TingkatPanel({
   kelasList,
@@ -69,10 +69,11 @@ export function KenaikanKelas6TingkatPanel({
     }
 
     if (mode === 'download') {
+      const kelasMapels = (activeMapels || []).filter((m) => isMapelForKelas(m, kls.id));
       exportSantriAndGradesToCSV({
         santriToExport: santriInKls,
         kelasList,
-        activeMapels,
+        activeMapels: kelasMapels,
         nilaiList,
         selectedSemesterId,
         predikatList,
@@ -142,7 +143,16 @@ export function KenaikanKelas6TingkatPanel({
               ? nextLevelClasses
               : kelasList.filter((k) => k.isActive && k.id !== kls.id);
 
-          const defaultTargetId = availableTargets[0]?.id || '';
+          // Cocokkan rombel paralel secara otomatis (misal 1 B -> 2 B, 2 B -> 3 B, 3 A/3 B -> 4)
+          const srcSuffixMatch = String(kls.namaKelas || '').trim().match(/([A-Za-z]+)$/);
+          const srcSuffix = srcSuffixMatch ? srcSuffixMatch[1].toUpperCase() : '';
+          const matchedParallelTarget = srcSuffix
+            ? availableTargets.find((tk) => {
+                const tMatch = String(tk.namaKelas || '').trim().match(/([A-Za-z]+)$/);
+                return tMatch && tMatch[1].toUpperCase() === srcSuffix;
+              })
+            : null;
+          const defaultTargetId = (matchedParallelTarget || availableTargets[0])?.id || '';
           const selectedTargetId = targetMap[kls.id] || defaultTargetId;
 
           return (

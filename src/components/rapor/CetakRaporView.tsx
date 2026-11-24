@@ -114,26 +114,10 @@ export function CetakRaporView({
     );
   };
 
-  const loadHtml2PdfScript = () =>
-    new Promise((resolve, reject) => {
-      if (typeof window !== 'undefined' && (window as any).html2pdf) {
-        resolve((window as any).html2pdf);
-        return;
-      }
-      const existing = document.getElementById('html2pdf-cdn-script');
-      if (existing) {
-        existing.addEventListener('load', () => resolve((window as any).html2pdf));
-        existing.addEventListener('error', reject);
-        return;
-      }
-      const script = document.createElement('script');
-      script.id = 'html2pdf-cdn-script';
-      script.src =
-        'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
-      script.onload = () => resolve((window as any).html2pdf);
-      script.onerror = () => reject(new Error('Gagal memuat modul generator PDF'));
-      document.head.appendChild(script);
-    });
+  const loadHtml2PdfScript = async () => {
+    const mod: any = await import('html2pdf.js');
+    return mod.default || mod;
+  };
 
   const triggerPrint = async () => {
     if (selectedEvaluations.length === 0) {

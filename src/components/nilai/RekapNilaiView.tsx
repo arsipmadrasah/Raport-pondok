@@ -164,53 +164,22 @@ export function RekapNilaiView({
     [rekapRows]
   );
 
-  const loadHtml2PdfScript = () =>
-    new Promise((resolve, reject) => {
-      if (typeof window !== 'undefined' && (window as any).html2pdf) {
-        resolve((window as any).html2pdf);
-        return;
-      }
-      const existing = document.getElementById('html2pdf-cdn-script');
-      if (existing) {
-        existing.addEventListener('load', () => resolve((window as any).html2pdf));
-        existing.addEventListener('error', reject);
-        return;
-      }
-      const script = document.createElement('script');
-      script.id = 'html2pdf-cdn-script';
-      script.src =
-        'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
-      script.onload = () => resolve((window as any).html2pdf);
-      script.onerror = () => reject(new Error('Gagal memuat modul generator PDF'));
-      document.head.appendChild(script);
-    });
-
+  // Ambil constructor jsPDF langsung dari bundle lokal (tanpa CDN luar, 100% vektor tajam)
   const sanitizeFilePart = (str: string) =>
     String(str || '')
       .replace(/[\\/:*?"<>|]/g, '-')
       .replace(/\s+/g, ' ')
       .trim();
 
-  // Ambil constructor jsPDF langsung dari bundle tanpa html2canvas (instan & 100% vektor tajam)
   const getJsPdfInstance = async (): Promise<any> => {
-    await loadHtml2PdfScript();
-    const win = window as any;
-    const JsPDFCtor = win.jspdf?.jsPDF || win.jsPDF;
-    if (typeof JsPDFCtor === 'function') {
-      return new JsPDFCtor({
-        unit: 'mm',
-        format: [330, 215],
-        orientation: 'landscape',
-        compress: true
-      });
-    }
-    const html2pdfLib = win.html2pdf;
-    const tempEl = document.createElement('div');
-    return await html2pdfLib()
-      .set({ jsPDF: { unit: 'mm', format: [330, 215], orientation: 'landscape' } })
-      .from(tempEl)
-      .toPdf()
-      .get('pdf');
+    const mod: any = await import('jspdf');
+    const JsPDFCtor = mod.jsPDF || mod.default;
+    return new JsPDFCtor({
+      unit: 'mm',
+      format: [330, 215],
+      orientation: 'landscape',
+      compress: true
+    });
   };
 
   type RGB = [number, number, number];
@@ -429,7 +398,7 @@ export function RekapNilaiView({
         doc.setFontSize(8);
         doc.setTextColor(15, 23, 42);
         doc.text(
-          `Pondok Pesantren Bali Bina Insani • Periode: ${taNama} (${semNama})${waliInfo} • Santri Bermasalah: ${dhoifKosongRows.length} dari ${totalSantriDiRekap} Santri`,
+          `Pondok Pesantren Bali Bina Insani • Periode: ${taNama} (${semNama})${waliInfo}`,
           marginX,
           startY + 9.5
         );
