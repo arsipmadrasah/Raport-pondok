@@ -325,6 +325,12 @@ export function RekapNilaiView({
     }
   };
 
+  const formatKelasLabel = (kls: any) => {
+    if (!kls || !kls.namaKelas) return 'Kelas';
+    const raw = String(kls.namaKelas).trim();
+    return /^kelas\s+/i.test(raw) ? raw : `Kelas ${raw}`;
+  };
+
   // 4. FITUR DOWNLOAD PDF REKAP SANTRI DHOIF & KOSONG BERDASARKAN KELAS TERPILIH (VEKTOR INSTAN)
   const handleDownloadDhoifKosongPdf = async () => {
     if (dhoifKosongRows.length === 0) {
@@ -338,11 +344,9 @@ export function RekapNilaiView({
     const kelasLabel =
       selectedKelasId === 'ALL'
         ? 'Semua Kelas'
-        : currentKelas
-          ? `Kelas ${currentKelas.namaKelas}`
-          : 'Kelas';
+        : formatKelasLabel(currentKelas);
     const safeKelas = sanitizeFilePart(kelasLabel);
-    const fileName = `Rekap Dhoif & Kosong ${safeKelas}.pdf`;
+    const fileName = `Rekap Dhoif ${safeKelas}.pdf`;
 
     if (showToast) showToast(`Membuat PDF Rekap Dhoif & Kosong (${kelasLabel})...`);
 
@@ -573,19 +577,10 @@ export function RekapNilaiView({
     const kelasLabel =
       selectedKelasId === 'ALL'
         ? 'Semua Kelas'
-        : currentKelas
-          ? `Kelas ${currentKelas.namaKelas}`
-          : 'Kelas';
-    const mapelNamesList = activeMapelFiltered.map((m) => m.namaLatin);
-    const mapelLabelRaw =
-      mapelNamesList.length > 0 ? mapelNamesList.join(', ') : 'Semua Mapel';
+        : formatKelasLabel(currentKelas);
 
     const safeKelas = sanitizeFilePart(kelasLabel);
-    let safeMapel = sanitizeFilePart(mapelLabelRaw);
-    if (safeMapel.length > 115) {
-      safeMapel = safeMapel.slice(0, 112).trim() + '...';
-    }
-    const fileName = `Rekap Nilai ${safeKelas} - ${safeMapel}.pdf`;
+    const fileName = `Rekap Nilai ${safeKelas}.pdf`;
 
     if (showToast) showToast('Membuat PDF F4 Landscape Rekap Nilai...');
 
@@ -616,14 +611,7 @@ export function RekapNilaiView({
       const bodyFont = mapelCount <= 6 ? 7.5 : mapelCount <= 8 ? 7.0 : 6.4;
       const rowH = mapelCount <= 6 ? 6.0 : 5.6;
 
-      // Hitung baris mapel header di atas agar tinggi header pas
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(7.5);
-      const mapelBannerLines: string[] = doc.splitTextToSize(
-        `Mata Pelajaran (${activeMapelFiltered.length}): ${mapelLabelRaw}`,
-        255
-      ).slice(0, 2);
-      const headerBlockH = mapelBannerLines.length > 1 ? 18.5 : 15.5;
+      const headerBlockH = 13.5;
       const theadRow1H = 8.0;
       const theadRow2H = 5.0;
       const theadTotalH = theadRow1H + theadRow2H;
@@ -656,13 +644,6 @@ export function RekapNilaiView({
           marginX,
           startY + 9.2
         );
-
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(7.5);
-        doc.setTextColor(30, 41, 59);
-        for (let l = 0; l < mapelBannerLines.length; l++) {
-          doc.text(mapelBannerLines[l], marginX, startY + 13.0 + l * 3.2);
-        }
 
         // Badge legenda merah
         const badgeText = 'Merah = Dhoif (< 2.70) / Kosong';
