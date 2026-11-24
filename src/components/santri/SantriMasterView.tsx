@@ -162,6 +162,13 @@ export function SantriMasterView({
   };
 
   const handleDelete = async (id, nama) => {
+    const affectedNilaiCount = (nilaiList || []).filter((n) => n.santriId === id).length;
+    const confirmMsg =
+      affectedNilaiCount > 0
+        ? `Hapus santri "${nama}"?\n\nPERINGATAN: ${affectedNilaiCount} nilai ujian milik santri ini juga akan ikut terhapus permanen!`
+        : `Hapus santri "${nama}" dari daftar?`;
+    if (!window.confirm(confirmMsg)) return;
+
     setSantriList((prev) => prev.filter((s) => s.id !== id));
     setCheckedSantriIds((prev) => prev.filter((item) => item !== id));
     let syncedToDb = false;

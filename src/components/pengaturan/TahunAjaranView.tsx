@@ -12,9 +12,10 @@ export function TahunAjaranView({
   setSelectedTahunAjaranId,
   selectedSemesterId,
   setSelectedSemesterId,
+  nilaiList = [],
   showToast,
   addLog
-}) {
+}: any) {
   const [newNama, setNewNama] = useState('');
   const [newNamaArab, setNewNamaArab] = useState('');
 
@@ -222,6 +223,14 @@ export function TahunAjaranView({
       showToast('Minimal harus ada 1 Tahun Pelajaran aktif!', 'warning');
       return;
     }
+    const semIds = semesterList.filter((s) => s.tahunAjaranId === ta.id).map((s) => s.id);
+    const affectedNilaiCount = (nilaiList || []).filter((n) => semIds.includes(n.semesterId)).length;
+    const confirmMsg =
+      affectedNilaiCount > 0
+        ? `Hapus Tahun Pelajaran "${ta.nama}"?\n\nPERINGATAN: Tindakan ini juga akan menghapus ${affectedNilaiCount} data nilai ujian pada tahun pelajaran ini secara permanen!`
+        : `Hapus Tahun Pelajaran "${ta.nama}"?`;
+    if (!window.confirm(confirmMsg)) return;
+
     const remainingTa = tahunAjaranList.filter((t) => t.id !== ta.id);
     const remainingSem = semesterList.filter((s) => s.tahunAjaranId !== ta.id);
     setTahunAjaranList(remainingTa);

@@ -911,16 +911,6 @@ export default function App() {
           if (raw) savedMasukRaporMap = JSON.parse(raw);
         } catch (_) { }
 
-        const existingMapelIds = new Set(mapelRows.map((m: any) => m.id));
-        const existingMapelNames = new Set(
-          mapelRows.map((m: any) => String(m.nama_latin || '').toLowerCase().trim())
-        );
-        const missingInitialMapels = INITIAL_MAPEL.filter(
-          (im) =>
-            !existingMapelIds.has(im.id) &&
-            !existingMapelNames.has(im.namaLatin.toLowerCase().trim())
-        );
-
         const parsedLoadedMapels = mapelRows.map((m: any) => {
           const namaLower = String(m.nama_latin || '').toLowerCase().trim();
           const isBahasaInggris = namaLower.includes('bahasa inggris');
@@ -966,33 +956,8 @@ export default function App() {
           };
         });
 
-        const missingParsed = missingInitialMapels.map((im) => ({
-          ...im,
-          masukRapor:
-            savedMasukRaporMap[im.id] !== undefined
-              ? savedMasukRaporMap[im.id]
-              : ((im as any).masukRapor ?? true),
-          targetKelasIds: savedKitabKelasMap[im.id] || im.targetKelasIds || ['ALL']
-        }));
-
-        const combinedMapels = [...parsedLoadedMapels, ...missingParsed];
-        setMapelList(combinedMapels.sort((a, b) => a.urutanTampil - b.urutanTampil));
-
-        if (missingInitialMapels.length > 0) {
-          SupabaseDB.upsert(
-            'mata_pelajaran',
-            missingInitialMapels.map((m) => ({
-              id: m.id,
-              kode_mapel: m.kodeMapel,
-              nama_latin: m.namaLatin,
-              nama_arab: m.namaArab,
-              kelompok_id: m.kelompokId,
-              urutan_tampil: m.urutanTampil,
-              status_aktif: m.statusAktif,
-              status_wajib: m.statusWajib
-            }))
-          ).catch(() => { });
-        }
+        // Gunakan daftar mapel langsung dari Supabase agar kitab yang dihapus admin tidak hidup kembali
+        setMapelList(parsedLoadedMapels.sort((a, b) => a.urutanTampil - b.urutanTampil));
       }
 
       if (predikatRows.length > 0) {
@@ -1755,6 +1720,24 @@ export default function App() {
 
         {/* PAGE CONTENT */}
         <main className="flex-1 overflow-y-auto p-3.5 sm:p-6 lg:p-7 relative">
+          {(dbStatus.state === 'error' || dbStatus.state === 'schema_missing') && (
+            <div className="no-print mb-4 p-3.5 rounded-xl bg-amber-50 border-2 border-amber-500 text-amber-950 flex flex-wrap items-center justify-between gap-2.5 text-xs shadow-xs">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                <span>
+                  <strong>Koneksi Supabase terganggu:</strong> data yang tampil saat ini mungkin data sementara/contoh, bukan data live pondok. ({dbStatus.message})
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={checkAndLoadFromSupabase}
+                className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold flex items-center gap-1.5 cursor-pointer"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>Hubungkan Ulang</span>
+              </button>
+            </div>
+          )}
           {/* ORNAMEN SUDUT MIHRAB ISLAMI (Tampil di Dashboard) */}
           {activeMenu === 'dashboard' && <MihrabArchMotif />}
 
@@ -1961,6 +1944,7 @@ export default function App() {
                     setSelectedTahunAjaranId={setSelectedTahunAjaranId}
                     selectedSemesterId={selectedSemesterId}
                     setSelectedSemesterId={setSelectedSemesterId}
+                    nilaiList={nilaiList}
                     showToast={showToast}
                     addLog={addLog}
                   />
@@ -1973,6 +1957,7 @@ export default function App() {
                     kelompokMapelList={kelompokMapelList}
                     setKelompokMapelList={setKelompokMapelList}
                     kelasList={kelasList}
+                    nilaiList={nilaiList}
                     showToast={showToast}
                     addLog={addLog}
                   />
@@ -2091,7 +2076,23 @@ export default function App() {
                     </button>
                     <button
                       disabled={isSeeding}
-                      onClick={() => seedInitialDataToSupabase(false)}
+                      onClick={() => {
+                        if (
+                          !window.confirm(
+                            'PERINGATAN: "Seed Data Awal" akan menimpa data kelas, mapel, predikat, dan memulihkan data contoh ke Supabase. Lanjutkan?'
+                          )
+                        ) {
+                          return;
+                        }
+                        const typed = window.prompt(
+                          'Ketik RESET (huruf besar) untuk mengonfirmasi:'
+                        );
+                        if (typed !== 'RESET') {
+                          showToast('Seed Data Awal dibatalkan.', 'warning');
+                          return;
+                        }
+                        seedInitialDataToSupabase(false);
+                      }}
                       className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-emerald-950 font-bold flex items-center gap-1.5 disabled:opacity-50"
                     >
                       <Sparkles className="w-3.5 h-3.5" />

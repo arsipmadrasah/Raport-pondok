@@ -316,9 +316,10 @@ export function MapelMasterView({
   kelompokMapelList,
   setKelompokMapelList,
   kelasList = [],
+  nilaiList = [],
   showToast,
   addLog
-}) {
+}: any) {
   const [namaLatin, setNamaLatin] = useState('');
   const [namaArab, setNamaArab] = useState('');
   const [kelompokId, setKelompokId] = useState(
@@ -510,7 +511,7 @@ export function MapelMasterView({
 
     const newMp = {
       id: `mp-${Date.now()}`,
-      kodeMapel: `MP-${mapelList.length + 1}`,
+      kodeMapel: `MP-${Date.now().toString().slice(-6)}`,
       namaLatin: namaLatin.trim(),
       namaArab: namaArab.trim(),
       kelompokId,
@@ -555,16 +556,22 @@ export function MapelMasterView({
       status_wajib: true
     };
     const nextMapelList = [...mapelList, newMp];
+    let syncedToDb = false;
+    let dbErrMsg = '';
     try {
       await SupabaseDB.upsert('mata_pelajaran', {
         ...corePayload,
         target_kelas_ids: finalTargetKelasIds,
         masuk_rapor: newMasukRapor
       });
+      syncedToDb = true;
     } catch (_) {
       try {
         await SupabaseDB.upsert('mata_pelajaran', corePayload);
-      } catch (__) { }
+        syncedToDb = true;
+      } catch (err: any) {
+        dbErrMsg = err?.message || 'Koneksi ke Supabase terputus';
+      }
     }
     try {
       await saveCloudMapelConfig(nextMapelList);
@@ -579,7 +586,10 @@ export function MapelMasterView({
       `Menambahkan kitab/mapel ${newMp.namaLatin} (Kelompok: ${selectedGroup?.namaKelompok || 'Umum'} • Peruntukan: ${kelasDesc})`
     );
     showToast(
-      `Mata pelajaran ${newMp.namaLatin} berhasil ditambahkan & disinkronkan ke Supabase (${kelasDesc})!`
+      syncedToDb
+        ? `Mata pelajaran ${newMp.namaLatin} berhasil ditambahkan & disinkronkan ke Supabase (${kelasDesc})!`
+        : `Mata pelajaran ${newMp.namaLatin} ditambahkan lokal, namun gagal simpan ke Supabase (${dbErrMsg}).`,
+      syncedToDb ? 'success' : 'warning'
     );
   };
 
@@ -832,7 +842,12 @@ export function MapelMasterView({
 
   // Hapus mapel
   const handleDeleteMapel = async (id, nama) => {
-    if (!window.confirm(`Hapus mata pelajaran ${nama}?`)) return;
+    const affectedNilaiCount = (nilaiList || []).filter((n) => n.mapelId === id).length;
+    const confirmMsg =
+      affectedNilaiCount > 0
+        ? `Hapus mata pelajaran "${nama}"?\n\nPERINGATAN: ${affectedNilaiCount} nilai ujian pada kitab ini juga akan ikut terhapus permanen!`
+        : `Hapus mata pelajaran "${nama}"?`;
+    if (!window.confirm(confirmMsg)) return;
     const remainingList = mapelList.filter((m) => m.id !== id);
     setMapelList(remainingList);
     try {
@@ -843,11 +858,21 @@ export function MapelMasterView({
     try {
       await saveCloudMapelConfig(remainingList);
     } catch (_) { }
+    let syncedToDb = false;
+    let dbErrMsg = '';
     try {
       await SupabaseDB.deleteById('mata_pelajaran', id);
-    } catch (_) { }
+      syncedToDb = true;
+    } catch (err: any) {
+      dbErrMsg = err?.message || 'Koneksi terputus';
+    }
     addLog('HAPUS_MAPEL', `Menghapus kitab/mapel ${nama}`);
-    showToast(`Mapel ${nama} dihapus.`);
+    showToast(
+      syncedToDb
+        ? `Mapel ${nama} berhasil dihapus dari Supabase.`
+        : `Mapel ${nama} dihapus lokal, namun gagal hapus di Supabase (${dbErrMsg}).`,
+      syncedToDb ? 'success' : 'warning'
+    );
   };
 
   const filteredMapels = mapelList.filter((m) => {
