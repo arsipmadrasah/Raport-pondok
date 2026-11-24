@@ -205,6 +205,7 @@ export default function App() {
     message: 'Menyinkronkan data latar belakang...',
     lastSync: null
   });
+  const [hasInitialLoadDone, setHasInitialLoadDone] = useState(false);
   const [showDbModal, setShowDbModal] = useState(false);
   const [isSeeding, setIsSeeding] = useState(false);
 
@@ -732,9 +733,8 @@ export default function App() {
     }));
 
     try {
-      const pondokRows = await SupabaseDB.selectAll('pondok_profile');
-
       const [
+        pondokRows,
         taRows,
         semRows,
         kelasRows,
@@ -745,6 +745,7 @@ export default function App() {
         nilaiRows,
         logRows
       ] = await Promise.all([
+        SupabaseDB.selectAll('pondok_profile'),
         SupabaseDB.selectAll('tahun_ajaran', 'nama', true),
         SupabaseDB.selectAll('semester', 'angka', true),
         SupabaseDB.selectAll('kelas', 'tingkat', true),
@@ -1071,14 +1072,13 @@ export default function App() {
           : `Mode Cepat Aktif (Supabase: ${msg})`,
         lastSync: null
       });
+    } finally {
+      setHasInitialLoadDone(true);
     }
   };
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      checkAndLoadFromSupabase();
-    }, 150);
-    return () => clearTimeout(timer);
+    checkAndLoadFromSupabase();
   }, []);
 
   const addLog = async (aksi, deskripsi) => {
@@ -1272,6 +1272,30 @@ export default function App() {
       );
     }
   };
+
+  if (!hasInitialLoadDone) {
+    return (
+      <div className="min-h-screen bg-[#064E3B] text-white flex flex-col items-center justify-center p-6 text-center font-sans">
+        <div className="bg-white text-slate-900 rounded-2xl border-2 border-slate-900 shadow-[6px_6px_0px_#0F172A] p-7 max-w-sm w-full space-y-4">
+          <div className="flex justify-center">
+            <BaliBinaInsaniLogo size={64} customLogoUrl={pondok.logoUrl} />
+          </div>
+          <div className="space-y-1">
+            <h2 className="text-base font-black tracking-tight text-slate-950">
+              E-Rapor Pesantren
+            </h2>
+            <p className="text-xs font-semibold text-emerald-800">
+              Memuat data terbaru dari Supabase...
+            </p>
+          </div>
+          <div className="flex items-center justify-center gap-2 text-xs text-slate-500 pt-1">
+            <RefreshCw className="w-4 h-4 animate-spin text-emerald-700" />
+            <span>Mohon tunggu sebentar</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (isGuruMode) {
     return (
