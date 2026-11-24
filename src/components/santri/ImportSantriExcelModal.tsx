@@ -311,10 +311,14 @@ export function ImportSantriExcelModal({
 
       setSantriList(updatedList);
 
+      let syncedToDb = true;
+      let dbErrMsg = '';
       if (supabasePayload.length > 0) {
         try {
           await SupabaseDB.upsert('santri', supabasePayload);
-        } catch (dbErr) {
+        } catch (dbErr: any) {
+          syncedToDb = false;
+          dbErrMsg = dbErr?.message || 'Koneksi terputus';
           console.warn('Gagal upsert langsung ke Supabase:', dbErr);
         }
       }
@@ -325,7 +329,10 @@ export function ImportSantriExcelModal({
       );
 
       showToast(
-        `Sukses! ${newCount} santri baru ditambahkan, ${updatedCount} santri diperbarui ke database!`
+        syncedToDb
+          ? `Sukses! ${newCount} santri baru ditambahkan, ${updatedCount} santri diperbarui ke Supabase!`
+          : `Import Excel dimuat di sesi ini, namun gagal tersimpan ke Supabase (${dbErrMsg}). Periksa koneksi dan coba lagi.`,
+        syncedToDb ? 'success' : 'warning'
       );
       onClose();
     } catch (err) {

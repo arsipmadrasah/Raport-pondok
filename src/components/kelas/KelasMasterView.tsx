@@ -80,18 +80,30 @@ export function KelasMasterView({
     setSelectedKelasId(newKls.id);
     setNamaKelas('');
     setWaliKelas('');
+    let syncedToDb = false;
+    let dbErrMsg = '';
     try {
       await SupabaseDB.upsert('kelas', {
         id: newKls.id,
         nama_kelas: newKls.namaKelas,
+        nama_arab: newKls.namaArab || '',
         tingkat: lv,
         wali_kelas: newKls.waliKelas,
+        nip_wali: newKls.nipWali || '',
         kapasitas: 30,
         is_active: true
       });
-    } catch (_) { }
+      syncedToDb = true;
+    } catch (err: any) {
+      dbErrMsg = err?.message || 'Koneksi terputus';
+    }
     addLog('TAMBAH_KELAS', `Menambahkan Kelas ${newKls.namaKelas} (Tingkat ${lv})`);
-    showToast(`Kelas ${newKls.namaKelas} (Tingkat ${lv}) berhasil ditambahkan!`);
+    showToast(
+      syncedToDb
+        ? `Kelas ${newKls.namaKelas} (Tingkat ${lv}) berhasil ditambahkan ke Supabase!`
+        : `Kelas ${newKls.namaKelas} ditambahkan lokal, namun gagal simpan ke Supabase (${dbErrMsg}).`,
+      syncedToDb ? 'success' : 'warning'
+    );
   };
 
   const handleQuickAddSantriToKelas = async (e) => {
@@ -115,23 +127,37 @@ export function KelasMasterView({
     setSantriList((prev) => [...prev, newSantri]);
     setQuickNis('');
     setQuickNama('');
+    let syncedToDb = false;
+    let dbErrMsg = '';
     try {
       await SupabaseDB.upsert('santri', {
         id: newSantri.id,
         nis: newSantri.nis,
+        nisn: newSantri.nisn || '',
         nama_lengkap: newSantri.namaLengkap,
-        jenis_kelamin: 'L',
+        nama_arab: newSantri.namaArab || '',
+        jenis_kelamin: newSantri.jenisKelamin,
+        tempat_lahir: newSantri.tempatLahir || 'Bali',
+        tanggal_lahir: newSantri.tanggalLahir || '2011-01-01',
+        nama_wali: newSantri.namaWali || '',
+        alamat: newSantri.alamat || '',
         tahun_masuk: newSantri.tahunMasuk,
         status_aktif: true,
         kelas_id: activeKelasObj.id
       });
-    } catch (_) { }
+      syncedToDb = true;
+    } catch (err: any) {
+      dbErrMsg = err?.message || 'Koneksi terputus';
+    }
     addLog(
       'TAMBAH_SANTRI',
       `Menambahkan ${newSantri.namaLengkap} ke Kelas ${activeKelasObj.namaKelas}`
     );
     showToast(
-      `${newSantri.namaLengkap} ditambahkan ke Kelas ${activeKelasObj.namaKelas}!`
+      syncedToDb
+        ? `${newSantri.namaLengkap} berhasil ditambahkan ke Kelas ${activeKelasObj.namaKelas} (Supabase)!`
+        : `${newSantri.namaLengkap} ditambahkan lokal, namun gagal simpan ke Supabase (${dbErrMsg}).`,
+      syncedToDb ? 'success' : 'warning'
     );
   };
 
@@ -167,10 +193,20 @@ export function KelasMasterView({
     if (selectedKelasId === k.id && remaining.length > 0) {
       setSelectedKelasId(remaining[0].id);
     }
+    let syncedToDb = false;
+    let dbErrMsg = '';
     try {
       await SupabaseDB.deleteById('kelas', k.id);
-    } catch (_) { }
-    showToast(`Kelas ${k.namaKelas} berhasil dihapus.`);
+      syncedToDb = true;
+    } catch (err: any) {
+      dbErrMsg = err?.message || 'Koneksi terputus';
+    }
+    showToast(
+      syncedToDb
+        ? `Kelas ${k.namaKelas} berhasil dihapus dari Supabase.`
+        : `Kelas ${k.namaKelas} dihapus lokal, namun gagal hapus di Supabase (${dbErrMsg}).`,
+      syncedToDb ? 'success' : 'warning'
+    );
   };
 
   return (

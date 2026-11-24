@@ -116,17 +116,29 @@ export function InputNilaiSpreadsheetView({
       });
     }
 
+    let syncedToDb = false;
+    let dbErrMsg = '';
     try {
       if (deletePromises.length > 0) await Promise.all(deletePromises);
       if (upsertBatch.length > 0) {
         await SupabaseDB.upsert('nilai', upsertBatch, 'santri_id,semester_id,mapel_id');
       }
-    } catch (_) { }
+      syncedToDb = true;
+    } catch (err: any) {
+      dbErrMsg = err?.message || 'Koneksi ke Supabase terputus';
+    }
 
     setNilaiList(updatedNilai);
-    setHasUnsaved(false);
-    addLog('SIMPAN_NILAI', `Menyimpan nilai Kelas ${selectedKelasId}`);
-    showToast('Nilai berhasil disimpan & peringkat dihitung ulang!');
+    if (syncedToDb) {
+      setHasUnsaved(false);
+      addLog('SIMPAN_NILAI', `Menyimpan nilai Kelas ${selectedKelasId}`);
+      showToast('Nilai berhasil disimpan ke Supabase & peringkat dihitung ulang!');
+    } else {
+      showToast(
+        `Gagal menyimpan nilai ke Supabase (${dbErrMsg}). Periksa koneksi internet lalu klik Simpan Nilai kembali.`,
+        'warning'
+      );
+    }
   };
 
   return (

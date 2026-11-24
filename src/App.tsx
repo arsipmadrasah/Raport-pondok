@@ -392,12 +392,15 @@ export default function App() {
 
     setKelasList((prev) => prev.map((k) => (k.id === kelasId ? updatedObj : k)));
 
+    let syncedToDb = false;
+    let dbErrMsg = '';
     try {
       await SupabaseDB.updateById('kelas', kelasId, {
         nama_kelas: cleanNama,
         tingkat: cleanTingkat,
         wali_kelas: cleanWali
       });
+      syncedToDb = true;
     } catch (_) {
       try {
         await SupabaseDB.upsert('kelas', {
@@ -410,14 +413,22 @@ export default function App() {
           kapasitas: updatedObj.kapasitas || 30,
           is_active: true
         });
-      } catch (_) { }
+        syncedToDb = true;
+      } catch (err: any) {
+        dbErrMsg = err?.message || 'Koneksi terputus';
+      }
     }
 
     addLog(
       'EDIT_KELAS',
       `Mengubah kelas menjadi "${cleanNama}" (Tingkat ${cleanTingkat} • Wali: ${cleanWali})`
     );
-    showToast(`Kelas berhasil diperbarui menjadi "${cleanNama}" (Tingkat ${cleanTingkat})!`);
+    showToast(
+      syncedToDb
+        ? `Kelas berhasil diperbarui menjadi "${cleanNama}" (Tingkat ${cleanTingkat}) di Supabase!`
+        : `Kelas diubah lokal, namun gagal simpan ke Supabase (${dbErrMsg}).`,
+      syncedToDb ? 'success' : 'warning'
+    );
     return true;
   };
 
@@ -453,6 +464,8 @@ export default function App() {
 
     setSantriList(updatedSantriAll);
 
+    let syncedToDb = false;
+    let dbErrMsg = '';
     try {
       await SupabaseDB.upsert(
         'santri',
@@ -463,8 +476,8 @@ export default function App() {
           nama_lengkap: s.namaLengkap,
           nama_arab: s.namaArab || '',
           jenis_kelamin: s.jenisKelamin || 'L',
-          tempat_lahir: s.tempatLahir || '',
-          tanggal_lahir: s.tanggalLahir || null,
+          tempat_lahir: s.tempatLahir || 'Bali',
+          tanggal_lahir: s.tanggalLahir || '2011-01-01',
           nama_wali: s.namaWali || '',
           alamat: s.alamat || '',
           tahun_masuk: s.tahunMasuk || 2023,
@@ -472,7 +485,10 @@ export default function App() {
           kelas_id: targetKelasId
         }))
       );
-    } catch (_) { }
+      syncedToDb = true;
+    } catch (err: any) {
+      dbErrMsg = err?.message || 'Koneksi terputus';
+    }
 
     const logDesc =
       customReason ||
@@ -482,7 +498,10 @@ export default function App() {
       )})`;
     addLog('MUTASI_NAIK_KELAS', logDesc);
     showToast(
-      `Berhasil memindahkan ${affectedRows.length} santri ke Kelas ${targetKelas.namaKelas}!`
+      syncedToDb
+        ? `Berhasil memindahkan ${affectedRows.length} santri ke Kelas ${targetKelas.namaKelas} (Supabase)!`
+        : `Santri dipindahkan lokal, namun gagal simpan ke Supabase (${dbErrMsg}).`,
+      syncedToDb ? 'success' : 'warning'
     );
   };
 
@@ -492,16 +511,24 @@ export default function App() {
     setSantriList((prev) => prev.filter((s) => !santriIds.includes(s.id)));
     setNilaiList((prev) => prev.filter((n) => !santriIds.includes(n.santriId)));
 
+    let syncedToDb = false;
+    let dbErrMsg = '';
     try {
       await SupabaseDB.deleteByIds('santri', santriIds);
-    } catch (_) { }
+      syncedToDb = true;
+    } catch (err: any) {
+      dbErrMsg = err?.message || 'Koneksi terputus';
+    }
 
     addLog(
       'HAPUS_ALUMNI_TINGKAT_6',
       `Menghapus ${santriIds.length} data santri (${reasonLabel}) setelah pengunduhan arsip`
     );
     showToast(
-      `${santriIds.length} data santri (${reasonLabel}) telah dihapus. Kelas kini kosong & siap diisi kenaikan kelas!`
+      syncedToDb
+        ? `${santriIds.length} data santri (${reasonLabel}) telah dihapus permanen dari Supabase!`
+        : `${santriIds.length} data santri dihapus lokal, namun gagal hapus di Supabase (${dbErrMsg}).`,
+      syncedToDb ? 'success' : 'warning'
     );
   };
 
@@ -1191,23 +1218,19 @@ export default function App() {
       ];
     });
 
-    if (dbStatus.state === 'connected') {
-      try {
-        if (angkaNilai === null) {
-          await SupabaseDB.deleteNilaiCell(santriId, selectedSemesterId, mapelId);
-        } else {
-          await SupabaseDB.upsert(
-            'nilai',
-            {
-              santri_id: santriId,
-              semester_id: selectedSemesterId,
-              mapel_id: mapelId,
-              angka_nilai: angkaNilai
-            },
-            'santri_id,semester_id,mapel_id'
-          );
-        }
-      } catch (_) { }
+    if (angkaNilai === null) {
+      await SupabaseDB.deleteNilaiCell(santriId, selectedSemesterId, mapelId);
+    } else {
+      await SupabaseDB.upsert(
+        'nilai',
+        {
+          santri_id: santriId,
+          semester_id: selectedSemesterId,
+          mapel_id: mapelId,
+          angka_nilai: angkaNilai
+        },
+        'santri_id,semester_id,mapel_id'
+      );
     }
   };
 
@@ -1241,30 +1264,24 @@ export default function App() {
       return next;
     });
 
-    if (dbStatus.state === 'connected') {
-      try {
-        const upsertBatch = records
-          .filter((r) => r.angkaNilai !== null)
-          .map((r) => ({
-            santri_id: r.santriId,
-            semester_id: selectedSemesterId,
-            mapel_id: r.mapelId,
-            angka_nilai: r.angkaNilai
-          }));
-        if (upsertBatch.length > 0) {
-          await SupabaseDB.upsert('nilai', upsertBatch, 'santri_id,semester_id,mapel_id');
-        }
-        const deleteBatch = records.filter((r) => r.angkaNilai === null);
-        if (deleteBatch.length > 0) {
-          await Promise.all(
-            deleteBatch.map((r) =>
-              SupabaseDB.deleteNilaiCell(r.santriId, selectedSemesterId, r.mapelId)
-            )
-          );
-        }
-      } catch (err) {
-        console.error('Supabase batch save error:', err);
-      }
+    const upsertBatch = records
+      .filter((r) => r.angkaNilai !== null)
+      .map((r) => ({
+        santri_id: r.santriId,
+        semester_id: selectedSemesterId,
+        mapel_id: r.mapelId,
+        angka_nilai: r.angkaNilai
+      }));
+    if (upsertBatch.length > 0) {
+      await SupabaseDB.upsert('nilai', upsertBatch, 'santri_id,semester_id,mapel_id');
+    }
+    const deleteBatch = records.filter((r) => r.angkaNilai === null);
+    if (deleteBatch.length > 0) {
+      await Promise.all(
+        deleteBatch.map((r) =>
+          SupabaseDB.deleteNilaiCell(r.santriId, selectedSemesterId, r.mapelId)
+        )
+      );
     }
   };
 

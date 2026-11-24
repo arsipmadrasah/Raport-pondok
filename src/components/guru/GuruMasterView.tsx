@@ -94,7 +94,6 @@ export function GuruMasterView({
       try {
         localStorage.setItem('rapor_guru_list', JSON.stringify(updated));
       } catch (_) {}
-      showToast(`Data guru ${namaTrim} berhasil diperbarui!`, 'success');
       if (addLog) addLog('EDIT_GURU', `Memperbarui nama guru ${namaTrim}`);
     } else {
       // Tambah guru baru
@@ -110,7 +109,6 @@ export function GuruMasterView({
       try {
         localStorage.setItem('rapor_guru_list', JSON.stringify(updated));
       } catch (_) {}
-      showToast(`Guru ${namaTrim} berhasil ditambahkan!`, 'success');
       if (addLog) addLog('TAMBAH_GURU', `Menambahkan guru baru ${namaTrim}`);
     }
 
@@ -125,8 +123,18 @@ export function GuruMasterView({
         kelas_ids: targetGuru.kelasIds || [],
         status_aktif: targetGuru.statusAktif ?? true
       });
+      showToast(
+        editingGuru
+          ? `Data guru ${namaTrim} berhasil diperbarui ke Supabase!`
+          : `Guru ${namaTrim} berhasil ditambahkan ke Supabase!`,
+        'success'
+      );
     } catch (err: any) {
       console.warn('Gagal menyimpan ke tabel guru di Supabase:', err);
+      showToast(
+        `Data guru ${namaTrim} tersimpan lokal, namun gagal sinkron ke Supabase (${err?.message || 'Koneksi terputus'}).`,
+        'warning'
+      );
     }
   };
 

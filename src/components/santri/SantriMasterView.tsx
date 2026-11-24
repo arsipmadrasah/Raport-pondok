@@ -129,31 +129,56 @@ export function SantriMasterView({
     setNamaLengkap('');
     setNis('');
 
+    let syncedToDb = false;
+    let dbErrMsg = '';
     try {
       await SupabaseDB.upsert('santri', {
         id: newSantri.id,
         nis: newSantri.nis,
+        nisn: newSantri.nisn || '',
         nama_lengkap: newSantri.namaLengkap,
-        nama_arab: '',
+        nama_arab: newSantri.namaArab || '',
         jenis_kelamin: newSantri.jenisKelamin,
+        tempat_lahir: newSantri.tempatLahir || 'Bali',
+        tanggal_lahir: newSantri.tanggalLahir || '2011-01-01',
+        nama_wali: newSantri.namaWali || '',
+        alamat: newSantri.alamat || '',
         tahun_masuk: newSantri.tahunMasuk,
         status_aktif: true,
         kelas_id: newSantri.kelasId
       });
-    } catch (_) { }
+      syncedToDb = true;
+    } catch (err: any) {
+      dbErrMsg = err?.message || 'Koneksi terputus';
+    }
 
     addLog('TAMBAH_SANTRI', `Menambahkan santri ${newSantri.namaLengkap}`);
-    showToast(`Santri ${newSantri.namaLengkap} berhasil ditambahkan!`);
+    showToast(
+      syncedToDb
+        ? `Santri ${newSantri.namaLengkap} berhasil ditambahkan ke Supabase!`
+        : `Santri ${newSantri.namaLengkap} ditambahkan sementara, namun gagal simpan ke Supabase (${dbErrMsg}).`,
+      syncedToDb ? 'success' : 'warning'
+    );
   };
 
   const handleDelete = async (id, nama) => {
     setSantriList((prev) => prev.filter((s) => s.id !== id));
     setCheckedSantriIds((prev) => prev.filter((item) => item !== id));
+    let syncedToDb = false;
+    let dbErrMsg = '';
     try {
       await SupabaseDB.deleteById('santri', id);
-    } catch (_) { }
+      syncedToDb = true;
+    } catch (err: any) {
+      dbErrMsg = err?.message || 'Koneksi terputus';
+    }
     addLog('HAPUS_SANTRI', `Menghapus santri ${nama}`);
-    showToast(`Santri ${nama} dihapus.`);
+    showToast(
+      syncedToDb
+        ? `Santri ${nama} berhasil dihapus dari Supabase.`
+        : `Santri ${nama} dihapus lokal, namun gagal hapus di Supabase (${dbErrMsg}).`,
+      syncedToDb ? 'success' : 'warning'
+    );
   };
 
   const currentFilteredKelasObj = kelasList.find((k) => k.id === filterKelasId);

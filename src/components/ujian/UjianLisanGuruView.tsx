@@ -328,36 +328,15 @@ export function UjianLisanGuruView({
   const storageKey = `ujian_syafahi_scores_${selectedSemesterId}_${selectedKelasId}_${selectedMapelId}`;
   const [examItems, setExamItems] = useState<{ [santriId: string]: (number | '')[] }>({});
   const [unsavedSantriIds, setUnsavedSantriIds] = useState<Set<string>>(new Set());
+  const prevStorageKeyRef = useRef<string>('');
+  const unsavedRef = useRef<Set<string>>(new Set());
   const [isSaving, setIsSaving] = useState(false);
   const [searchKeyword, setSearchKeyword] = useState('');
 
-  // Muat data saat kelas/mapel berganti (dari localStorage atau database rapor)
+  // Sinkronkan ref unsaved agar efek rekonsiliasi Supabase tidak menimpa ketikan guru yang belum disimpan
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(storageKey);
-      if (raw) {
-        setExamItems(JSON.parse(raw));
-      } else {
-        const initial: { [santriId: string]: (number | '')[] } = {};
-        santriInKelas.forEach((s) => {
-          const matchNilai = nilaiList.find(
-            (n) =>
-              n.santriId === s.id &&
-              n.mapelId === selectedMapelId &&
-              n.semesterId === selectedSemesterId
-          );
-          if (matchNilai && matchNilai.angkaNilai !== null) {
-            // Jika sudah ada nilai di database tapi belum ada butir soal, isi 3 soal sama dengan rata-rata
-            initial[s.id] = [matchNilai.angkaNilai, matchNilai.angkaNilai, matchNilai.angkaNilai, '', ''];
-          } else {
-            initial[s.id] = ['', '', '', '', ''];
-          }
-        });
-        setExamItems(initial);
-      }
-    } catch (_) { }
-    setUnsavedSantriIds(new Set());
-  }, [storageKey, selectedKelasId, selectedMapelId, selectedSemesterId]);
+    unsavedRef.current = unsavedSantriIds;
+  }, [unsavedSantriIds]);
 
   // Kalkulasi Jumlah & Rata-Rata santri (Standar Lulus Minimal 2,7)
   const calculateScore = (scores: (number | '')[] | undefined) => {
@@ -381,6 +360,67 @@ export function UjianLisanGuruView({
       isLulus
     };
   };
+
+  // Muat & rekonsiliasi data dari Supabase (authoritative) + rincian butir soal localStorage
+  useEffect(() => {
+    const isContextSwitch = prevStorageKeyRef.current !== storageKey;
+    if (isContextSwitch) {
+      prevStorageKeyRef.current = storageKey;
+      unsavedRef.current = new Set();
+      setUnsavedSantriIds(new Set());
+    }
+
+    let cachedMap: { [santriId: string]: (number | '')[] } = {};
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (raw) cachedMap = JSON.parse(raw);
+    } catch (_) { }
+
+    setExamItems((prev) => {
+      const next: { [santriId: string]: (number | '')[] } = {};
+      santriInKelas.forEach((s) => {
+        // Pertahankan input guru yang sedang diketik dan belum disimpan pada kelas/mapel yang sama
+        if (!isContextSwitch && unsavedRef.current.has(s.id) && prev[s.id]) {
+          next[s.id] = prev[s.id];
+          return;
+        }
+
+        const matchNilai = nilaiList.find(
+          (n) =>
+            n.santriId === s.id &&
+            n.mapelId === selectedMapelId &&
+            n.semesterId === selectedSemesterId
+        );
+        const dbAvg =
+          matchNilai && matchNilai.angkaNilai !== null && !Number.isNaN(Number(matchNilai.angkaNilai))
+            ? Number(matchNilai.angkaNilai)
+            : null;
+
+        const cachedScores = Array.isArray(cachedMap[s.id]) ? cachedMap[s.id] : undefined;
+        const cachedAvg = cachedScores ? calculateScore(cachedScores).avg : null;
+
+        if (dbAvg !== null) {
+          // Gunakan rincian butir soal localStorage HANYA jika rata-ratanya masih cocok dengan Supabase
+          if (cachedScores && cachedAvg !== null && Math.abs(cachedAvg - dbAvg) <= 0.01) {
+            next[s.id] = cachedScores;
+          } else {
+            next[s.id] = [dbAvg, dbAvg, dbAvg, '', ''];
+          }
+        } else {
+          // Jika nilai di Supabase kosong/sudah dihapus, jangan biarkan cache lokal lama muncul kembali
+          next[s.id] = ['', '', '', '', ''];
+        }
+      });
+
+      try {
+        if (santriInKelas.length > 0 && unsavedRef.current.size === 0) {
+          localStorage.setItem(storageKey, JSON.stringify(next));
+        }
+      } catch (_) { }
+
+      return next;
+    });
+  }, [storageKey, selectedKelasId, selectedMapelId, selectedSemesterId, nilaiList, santriInKelas]);
 
   // Mengubah butir soal (1 s.d 5) saat ujian berlangsung atau perbaikan nilai remedial
   const handleScoreChange = (
@@ -413,33 +453,51 @@ export function UjianLisanGuruView({
     try {
       const recordsToSave: Array<{ santriId: string; mapelId: string; angkaNilai: number | null }> = [];
 
-      // Proses semua santri di kelas ini yang memiliki nilai
+      // Hanya kirim santri yang punya nilai atau yang nilainya memang dihapus dari database
       santriInKelas.forEach((s) => {
         const scores = examItems[s.id];
         const { avg } = calculateScore(scores);
-        recordsToSave.push({
-          santriId: s.id,
-          mapelId: selectedMapelId,
-          angkaNilai: avg
-        });
+        const hasExistingInDb = nilaiList.some(
+          (n) =>
+            n.santriId === s.id &&
+            n.mapelId === selectedMapelId &&
+            n.semesterId === selectedSemesterId &&
+            n.angkaNilai !== null
+        );
+        if (avg !== null || hasExistingInDb) {
+          recordsToSave.push({
+            santriId: s.id,
+            mapelId: selectedMapelId,
+            angkaNilai: avg
+          });
+        }
       });
 
-      if (onSaveMultipleNilai) {
-        await onSaveMultipleNilai(recordsToSave);
-      } else {
-        for (const rec of recordsToSave) {
-          await onSaveNilai(rec.santriId, rec.mapelId, rec.angkaNilai);
+      if (recordsToSave.length > 0) {
+        if (onSaveMultipleNilai) {
+          await onSaveMultipleNilai(recordsToSave);
+        } else {
+          for (const rec of recordsToSave) {
+            await onSaveNilai(rec.santriId, rec.mapelId, rec.angkaNilai);
+          }
         }
       }
 
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(examItems));
+      } catch (_) { }
+      unsavedRef.current = new Set();
       setUnsavedSantriIds(new Set());
       showToast(
-        `Alhamdulillah, nilai ujian & hasil remedial ${selectedMapelObj?.namaLatin || ''} berhasil disimpan ke database!`,
+        `Alhamdulillah, nilai ujian & hasil remedial ${selectedMapelObj?.namaLatin || ''} berhasil disimpan ke Supabase!`,
         'success'
       );
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      showToast('Terjadi kendala saat menyimpan ke database. Data tersimpan di memori lokal.', 'error');
+      showToast(
+        `Gagal menyimpan nilai ke Supabase (${err?.message || 'Koneksi terputus'}). Data sementara aman di perangkat ini, silakan coba Simpan lagi.`,
+        'error'
+      );
     } finally {
       setIsSaving(false);
     }

@@ -69,6 +69,8 @@ export function TahunAjaranView({
     setNewNama('');
     setNewNamaArab('');
 
+    let syncedToDb = false;
+    let dbErrMsg = '';
     try {
       await SupabaseDB.upsert('tahun_ajaran', {
         id: newTa.id,
@@ -94,10 +96,18 @@ export function TahunAjaranView({
           is_active: false
         }
       ]);
-    } catch (_) { }
+      syncedToDb = true;
+    } catch (err: any) {
+      dbErrMsg = err?.message || 'Koneksi terputus';
+    }
 
     addLog('TAMBAH_TAHUN_AJARAN', `Menambahkan Tahun Pelajaran ${newTa.nama}`);
-    showToast(`Tahun Pelajaran ${newTa.nama} (${newTa.namaArab}) berhasil ditambahkan!`);
+    showToast(
+      syncedToDb
+        ? `Tahun Pelajaran ${newTa.nama} (${newTa.namaArab}) berhasil ditambahkan ke Supabase!`
+        : `Tahun Pelajaran ${newTa.nama} ditambahkan lokal, namun gagal simpan ke Supabase (${dbErrMsg}).`,
+      syncedToDb ? 'success' : 'warning'
+    );
   };
 
   const startEditTa = (ta) => {
@@ -118,11 +128,14 @@ export function TahunAjaranView({
     );
     setEditingTaId(null);
 
+    let syncedToDb = false;
+    let dbErrMsg = '';
     try {
       await SupabaseDB.updateById('tahun_ajaran', ta.id, {
         nama: trimmed,
         nama_arab: arabVal
       });
+      syncedToDb = true;
     } catch (_) {
       try {
         await SupabaseDB.upsert('tahun_ajaran', {
@@ -131,11 +144,19 @@ export function TahunAjaranView({
           nama_arab: arabVal,
           is_active: ta.isActive
         });
-      } catch (_) { }
+        syncedToDb = true;
+      } catch (err: any) {
+        dbErrMsg = err?.message || 'Koneksi terputus';
+      }
     }
 
     addLog('EDIT_TAHUN_AJARAN', `Mengubah Tahun Pelajaran menjadi ${trimmed} (${arabVal})`);
-    showToast(`Tahun Pelajaran berhasil diubah menjadi ${trimmed}!`);
+    showToast(
+      syncedToDb
+        ? `Tahun Pelajaran berhasil diubah menjadi ${trimmed} (Supabase)!`
+        : `Tahun Pelajaran diubah lokal, namun gagal simpan ke Supabase (${dbErrMsg}).`,
+      syncedToDb ? 'success' : 'warning'
+    );
   };
 
   const handleActivatePeriode = async (taId, semId) => {
@@ -154,6 +175,8 @@ export function TahunAjaranView({
     setTahunAjaranList(updatedTaList);
     setSemesterList(updatedSemList);
 
+    let syncedToDb = false;
+    let dbErrMsg = '';
     try {
       await SupabaseDB.upsert(
         'tahun_ajaran',
@@ -175,7 +198,10 @@ export function TahunAjaranView({
           is_active: s.isActive
         }))
       );
-    } catch (_) { }
+      syncedToDb = true;
+    } catch (err: any) {
+      dbErrMsg = err?.message || 'Koneksi terputus';
+    }
 
     const targetTa = tahunAjaranList.find((t) => t.id === taId);
     const targetSem = semesterList.find((s) => s.id === semId);
@@ -184,7 +210,10 @@ export function TahunAjaranView({
       `Mengaktifkan Tahun Pelajaran ${targetTa?.nama} - Semester ${targetSem?.nama}`
     );
     showToast(
-      `Periode aktif diganti ke ${targetTa?.nama} — Semester ${targetSem?.nama}!`
+      syncedToDb
+        ? `Periode aktif diganti ke ${targetTa?.nama} — Semester ${targetSem?.nama} (Supabase)!`
+        : `Periode aktif diganti lokal, namun gagal simpan ke Supabase (${dbErrMsg}).`,
+      syncedToDb ? 'success' : 'warning'
     );
   };
 
@@ -205,12 +234,22 @@ export function TahunAjaranView({
       if (nextSem) setSelectedSemesterId(nextSem.id);
     }
 
+    let syncedToDb = false;
+    let dbErrMsg = '';
     try {
       await SupabaseDB.deleteById('tahun_ajaran', ta.id);
-    } catch (_) { }
+      syncedToDb = true;
+    } catch (err: any) {
+      dbErrMsg = err?.message || 'Koneksi terputus';
+    }
 
     addLog('HAPUS_TAHUN_AJARAN', `Menghapus Tahun Pelajaran ${ta.nama}`);
-    showToast(`Tahun Pelajaran ${ta.nama} dihapus.`);
+    showToast(
+      syncedToDb
+        ? `Tahun Pelajaran ${ta.nama} berhasil dihapus dari Supabase.`
+        : `Tahun Pelajaran ${ta.nama} dihapus lokal, namun gagal hapus di Supabase (${dbErrMsg}).`,
+      syncedToDb ? 'success' : 'warning'
+    );
   };
 
   return (
