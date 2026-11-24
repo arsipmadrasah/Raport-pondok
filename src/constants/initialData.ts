@@ -297,13 +297,13 @@ export const INITIAL_MAPEL = [
   {
     id: 'mp-10',
     kodeMapel: 'BA-02',
-    namaLatin: 'Qoulul Munir',
-    namaArab: 'القول المنير',
+    namaLatin: 'mustholah al hadist',
+    namaArab: 'مُصْطَلَحُ الْحَدِيثِ',
     kelompokId: 'grp-3',
     urutanTampil: 10,
     statusAktif: true,
     statusWajib: true,
-    targetKelasIds: ['kls-1794194070001']
+    targetKelasIds: ['kls-12a', 'kls-1794194070001', 'kls-1794194269522']
   },
   {
     id: 'mp-11',
@@ -314,7 +314,7 @@ export const INITIAL_MAPEL = [
     urutanTampil: 11,
     statusAktif: true,
     statusWajib: true,
-    targetKelasIds: ['kls-12a']
+    targetKelasIds: ['kls-12a', 'kls-1794194070001', 'kls-1794194269522']
   },
   {
     id: 'mp-aqidatul-awam',

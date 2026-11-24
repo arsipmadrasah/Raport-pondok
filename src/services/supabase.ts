@@ -172,6 +172,59 @@ export const SupabaseDB = {
   }
 };
 
+export const MAPEL_CONFIG_LOG_ID = 'sys-config-mapel-kelas';
+export const MAPEL_CONFIG_LOG_AKSI = '__SYS_MAPEL_CONFIG__';
+
+export interface CloudMapelConfig {
+  targetKelasMap: Record<string, string[]>;
+  masukRaporMap: Record<string, boolean>;
+}
+
+export function parseCloudMapelConfig(logRows: any[]): CloudMapelConfig {
+  const empty: CloudMapelConfig = { targetKelasMap: {}, masukRaporMap: {} };
+  if (!Array.isArray(logRows)) return empty;
+  const row = logRows.find(
+    (l) => l && (l.id === MAPEL_CONFIG_LOG_ID || l.aksi === MAPEL_CONFIG_LOG_AKSI)
+  );
+  if (!row || !row.deskripsi) return empty;
+  try {
+    const parsed = JSON.parse(String(row.deskripsi));
+    return {
+      targetKelasMap:
+        parsed && typeof parsed.targetKelasMap === 'object' && parsed.targetKelasMap
+          ? parsed.targetKelasMap
+          : {},
+      masukRaporMap:
+        parsed && typeof parsed.masukRaporMap === 'object' && parsed.masukRaporMap
+          ? parsed.masukRaporMap
+          : {}
+    };
+  } catch (_) {
+    return empty;
+  }
+}
+
+export async function saveCloudMapelConfig(mapelList: any[]): Promise<boolean> {
+  const targetKelasMap: Record<string, string[]> = {};
+  const masukRaporMap: Record<string, boolean> = {};
+  for (const m of mapelList || []) {
+    if (!m || !m.id) continue;
+    if (Array.isArray(m.targetKelasIds) && m.targetKelasIds.length > 0) {
+      targetKelasMap[m.id] = m.targetKelasIds;
+    }
+    if (typeof m.masukRapor === 'boolean') {
+      masukRaporMap[m.id] = m.masukRapor;
+    }
+  }
+  await SupabaseDB.upsert('log_aktivitas', {
+    id: MAPEL_CONFIG_LOG_ID,
+    aksi: MAPEL_CONFIG_LOG_AKSI,
+    deskripsi: JSON.stringify({ targetKelasMap, masukRaporMap }),
+    waktu: 'SYSTEM'
+  });
+  return true;
+}
+
 export const SUPABASE_SQL_MIGRATION = `-- ============================================================================
 -- SQL MIGRATION & RLS: APLIKASI RAPOR PONDOK PESANTREN (BALI BINA INSANI)
 -- Jalankan skrip ini di Supabase Dashboard -> SQL Editor -> New Query -> Run
@@ -241,12 +294,12 @@ CREATE TABLE IF NOT EXISTS public.mata_pelajaran (
   urutan_tampil SMALLINT NOT NULL DEFAULT 1,
   status_aktif BOOLEAN NOT NULL DEFAULT TRUE,
   status_wajib BOOLEAN NOT NULL DEFAULT TRUE,
-  target_kelas_ids JSONB NOT NULL DEFAULT '["ALL"]'::jsonb,
-  masuk_rapor BOOLEAN NOT NULL DEFAULT TRUE
+  target_kelas_ids JSONB DEFAULT NULL,
+  masuk_rapor BOOLEAN DEFAULT NULL
 );
 
-ALTER TABLE public.mata_pelajaran ADD COLUMN IF NOT EXISTS target_kelas_ids JSONB NOT NULL DEFAULT '["ALL"]'::jsonb;
-ALTER TABLE public.mata_pelajaran ADD COLUMN IF NOT EXISTS masuk_rapor BOOLEAN NOT NULL DEFAULT TRUE;
+ALTER TABLE public.mata_pelajaran ADD COLUMN IF NOT EXISTS target_kelas_ids JSONB DEFAULT NULL;
+ALTER TABLE public.mata_pelajaran ADD COLUMN IF NOT EXISTS masuk_rapor BOOLEAN DEFAULT NULL;
 
 CREATE TABLE IF NOT EXISTS public.predikat_config (
   id TEXT PRIMARY KEY,

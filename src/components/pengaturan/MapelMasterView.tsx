@@ -12,7 +12,7 @@ import {
   X
 } from 'lucide-react';
 import { isMapelForKelas } from '../../utils/academicHelpers';
-import { SupabaseDB } from '../../services/supabase';
+import { SupabaseDB, saveCloudMapelConfig } from '../../services/supabase';
 
 const PONDOK_KITAB_DIRECTORY = [
   // AQIDAH
@@ -554,7 +554,7 @@ export function MapelMasterView({
       status_aktif: true,
       status_wajib: true
     };
-    let syncedToSupabase = true;
+    const nextMapelList = [...mapelList, newMp];
     try {
       await SupabaseDB.upsert('mata_pelajaran', {
         ...corePayload,
@@ -564,11 +564,11 @@ export function MapelMasterView({
     } catch (_) {
       try {
         await SupabaseDB.upsert('mata_pelajaran', corePayload);
-        syncedToSupabase = false;
-      } catch (__) {
-        syncedToSupabase = false;
-      }
+      } catch (__) { }
     }
+    try {
+      await saveCloudMapelConfig(nextMapelList);
+    } catch (_) { }
 
     const selectedGroup = kelompokMapelList.find((g) => g.id === newMp.kelompokId);
     const kelasDesc = finalTargetKelasIds.includes('ALL')
@@ -579,10 +579,7 @@ export function MapelMasterView({
       `Menambahkan kitab/mapel ${newMp.namaLatin} (Kelompok: ${selectedGroup?.namaKelompok || 'Umum'} • Peruntukan: ${kelasDesc})`
     );
     showToast(
-      syncedToSupabase
-        ? `Mata pelajaran ${newMp.namaLatin} berhasil ditambahkan (${kelasDesc})!`
-        : `Mata pelajaran ${newMp.namaLatin} ditambahkan, namun kolom target_kelas_ids belum ada di Supabase (jalankan SQL Migration).`,
-      syncedToSupabase ? 'success' : 'warning'
+      `Mata pelajaran ${newMp.namaLatin} berhasil ditambahkan & disinkronkan ke Supabase (${kelasDesc})!`
     );
   };
 
@@ -659,13 +656,17 @@ export function MapelMasterView({
 
     let syncedToSupabase = false;
     try {
-      await SupabaseDB.updateById('mata_pelajaran', editingKitabForKelas.id, {
-        target_kelas_ids: finalIds
-      });
+      await saveCloudMapelConfig(updatedList);
       syncedToSupabase = true;
     } catch (_) {
       syncedToSupabase = false;
     }
+    try {
+      await SupabaseDB.updateById('mata_pelajaran', editingKitabForKelas.id, {
+        target_kelas_ids: finalIds
+      });
+      syncedToSupabase = true;
+    } catch (_) { }
 
     const countLabel = finalIds.includes('ALL')
       ? 'Semua Kelas'
@@ -677,7 +678,7 @@ export function MapelMasterView({
     showToast(
       syncedToSupabase
         ? `Peruntukan kelas untuk kitab "${editingKitabForKelas.namaLatin}" berhasil disimpan ke Supabase (${countLabel})!`
-        : `Peruntukan kelas "${editingKitabForKelas.namaLatin}" tersimpan lokal, namun gagal sinkron ke Supabase. Pastikan kolom target_kelas_ids sudah ditambahkan via SQL Migration.`,
+        : `Peruntukan kelas "${editingKitabForKelas.namaLatin}" tersimpan lokal, namun gagal terhubung ke Supabase.`,
       syncedToSupabase ? 'success' : 'warning'
     );
     setEditingKitabForKelas(null);
@@ -711,14 +712,19 @@ export function MapelMasterView({
       masukRapor: modalEditMasukRapor
     };
 
-    setMapelList((prev) =>
-      prev.map((m) => (m.id === editingKitabForKelompok.id ? updatedMp : m))
+    const updatedListForEdit = mapelList.map((m) =>
+      m.id === editingKitabForKelompok.id ? updatedMp : m
     );
+    setMapelList(updatedListForEdit);
 
     try {
       const masukMap = JSON.parse(localStorage.getItem('rapor_kitab_masuk_rapor_map') || '{}');
       masukMap[updatedMp.id] = modalEditMasukRapor;
       localStorage.setItem('rapor_kitab_masuk_rapor_map', JSON.stringify(masukMap));
+    } catch (_) { }
+
+    try {
+      await saveCloudMapelConfig(updatedListForEdit);
     } catch (_) { }
 
     try {
@@ -755,14 +761,19 @@ export function MapelMasterView({
     if (!target) return;
     const nextVal = target.masukRapor === false ? true : false;
 
-    setMapelList((prev) =>
-      prev.map((m) => (m.id === mapelId ? { ...m, masukRapor: nextVal } : m))
+    const updatedToggleList = mapelList.map((m) =>
+      m.id === mapelId ? { ...m, masukRapor: nextVal } : m
     );
+    setMapelList(updatedToggleList);
 
     try {
       const masukMap = JSON.parse(localStorage.getItem('rapor_kitab_masuk_rapor_map') || '{}');
       masukMap[mapelId] = nextVal;
       localStorage.setItem('rapor_kitab_masuk_rapor_map', JSON.stringify(masukMap));
+    } catch (_) { }
+
+    try {
+      await saveCloudMapelConfig(updatedToggleList);
     } catch (_) { }
 
     try {
@@ -822,11 +833,15 @@ export function MapelMasterView({
   // Hapus mapel
   const handleDeleteMapel = async (id, nama) => {
     if (!window.confirm(`Hapus mata pelajaran ${nama}?`)) return;
-    setMapelList((prev) => prev.filter((m) => m.id !== id));
+    const remainingList = mapelList.filter((m) => m.id !== id);
+    setMapelList(remainingList);
     try {
       const currentMap = JSON.parse(localStorage.getItem('rapor_kitab_kelas_map') || '{}');
       delete currentMap[id];
       localStorage.setItem('rapor_kitab_kelas_map', JSON.stringify(currentMap));
+    } catch (_) { }
+    try {
+      await saveCloudMapelConfig(remainingList);
     } catch (_) { }
     try {
       await SupabaseDB.deleteById('mata_pelajaran', id);

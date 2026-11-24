@@ -49,7 +49,10 @@ import {
 import {
   SupabaseDB,
   SUPABASE_CONFIG,
-  SUPABASE_SQL_MIGRATION
+  SUPABASE_SQL_MIGRATION,
+  MAPEL_CONFIG_LOG_ID,
+  MAPEL_CONFIG_LOG_AKSI,
+  parseCloudMapelConfig
 } from './services/supabase';
 
 import { BaliBinaInsaniLogo } from './components/common/BaliBinaInsaniLogo';
@@ -844,6 +847,8 @@ export default function App() {
         );
       }
 
+      const cloudMapelCfg = parseCloudMapelConfig(logRows);
+
       if (mapelRows.length > 0) {
         let savedKitabKelasMap: Record<string, string[]> = {};
         let savedMasukRaporMap: Record<string, boolean> = {};
@@ -874,16 +879,23 @@ export default function App() {
               im.id === m.id ||
               im.namaLatin.toLowerCase().trim() === namaLower
           );
+          const cloudTargetKelas = cloudMapelCfg.targetKelasMap[m.id];
           const dbTargetKelas =
             Array.isArray(m.target_kelas_ids) && m.target_kelas_ids.length > 0
               ? m.target_kelas_ids
-              : null;
+              : (Array.isArray(cloudTargetKelas) && cloudTargetKelas.length > 0
+                ? cloudTargetKelas
+                : null);
           const targetKelasIds =
             dbTargetKelas ||
             savedKitabKelasMap[m.id] ||
             initialMatch?.targetKelasIds ||
             ['ALL'];
-          const dbMasukRapor = typeof m.masuk_rapor === 'boolean' ? m.masuk_rapor : null;
+          const cloudMasukRapor = cloudMapelCfg.masukRaporMap[m.id];
+          const dbMasukRapor =
+            typeof m.masuk_rapor === 'boolean'
+              ? m.masuk_rapor
+              : (typeof cloudMasukRapor === 'boolean' ? cloudMasukRapor : null);
           const masukRapor =
             dbMasukRapor !== null
               ? dbMasukRapor
@@ -978,9 +990,12 @@ export default function App() {
         );
       }
 
-      if (logRows.length > 0) {
+      const visibleLogs = logRows.filter(
+        (l: any) => l.id !== MAPEL_CONFIG_LOG_ID && l.aksi !== MAPEL_CONFIG_LOG_AKSI
+      );
+      if (visibleLogs.length > 0) {
         setLogs(
-          logRows.map((l) => ({
+          visibleLogs.map((l) => ({
             id: l.id,
             aksi: l.aksi,
             deskripsi: l.deskripsi,
