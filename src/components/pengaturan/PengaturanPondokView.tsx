@@ -50,7 +50,7 @@ export function PengaturanPondokView({
     setPondok(updated);
     try {
       await persistPondokProfileToSupabase(updated);
-      showToast('Logo dikembalikan ke vektor resmi Bali Bina Insani & disimpan ke DB.');
+      showToast('Logo dikembalikan ke logo resmi Bali Bina Insani & disimpan ke DB.');
     } catch (_) { }
   };
 
@@ -205,7 +205,7 @@ export function PengaturanPondokView({
                   onClick={handleResetDefaultLogo}
                   className="px-3 py-2 rounded-xl bg-white border-2 border-slate-900 hover:bg-slate-100 text-slate-800 font-bold shadow-[2px_2px_0px_#0F172A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer"
                 >
-                  Gunakan Logo Vektor Bawaan
+                  Gunakan Logo Resmi Bawaan
                 </button>
               )}
             </div>
@@ -214,7 +214,7 @@ export function PengaturanPondokView({
               <b className="text-emerald-800">
                 {form.logoUrl
                   ? 'Menggunakan Gambar Kustom (Tersimpan di tabel pondok_profile.logo_url)'
-                  : 'Menggunakan Logo Vektor Resmi Bali Bina Insani'}
+                  : 'Menggunakan Logo Resmi Bali Bina Insani'}
               </b>
             </p>
           </div>
