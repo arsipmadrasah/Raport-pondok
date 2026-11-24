@@ -1541,8 +1541,10 @@ export default function App() {
       {/* MAIN CONTENT AREA */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#F8FAFC]">
         {/* HEADER DASHBOARD */}
-        <header className="no-print bg-white border-b-2 border-slate-900 px-4 sm:px-6 py-3.5 flex items-center justify-between sticky top-0 z-30 overflow-hidden">
-          <HeaderIslamicPattern />
+        <header className="no-print bg-white border-b-2 border-slate-900 px-4 sm:px-6 py-3.5 flex items-center justify-between sticky top-0 z-40">
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <HeaderIslamicPattern />
+          </div>
 
           <div className="flex items-center gap-3 min-w-0 relative z-10">
             <button
