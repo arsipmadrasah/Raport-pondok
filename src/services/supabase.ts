@@ -240,8 +240,13 @@ CREATE TABLE IF NOT EXISTS public.mata_pelajaran (
   kelompok_id TEXT NOT NULL REFERENCES public.kelompok_mapel(id) ON DELETE RESTRICT,
   urutan_tampil SMALLINT NOT NULL DEFAULT 1,
   status_aktif BOOLEAN NOT NULL DEFAULT TRUE,
-  status_wajib BOOLEAN NOT NULL DEFAULT TRUE
+  status_wajib BOOLEAN NOT NULL DEFAULT TRUE,
+  target_kelas_ids JSONB NOT NULL DEFAULT '["ALL"]'::jsonb,
+  masuk_rapor BOOLEAN NOT NULL DEFAULT TRUE
 );
+
+ALTER TABLE public.mata_pelajaran ADD COLUMN IF NOT EXISTS target_kelas_ids JSONB NOT NULL DEFAULT '["ALL"]'::jsonb;
+ALTER TABLE public.mata_pelajaran ADD COLUMN IF NOT EXISTS masuk_rapor BOOLEAN NOT NULL DEFAULT TRUE;
 
 CREATE TABLE IF NOT EXISTS public.predikat_config (
   id TEXT PRIMARY KEY,

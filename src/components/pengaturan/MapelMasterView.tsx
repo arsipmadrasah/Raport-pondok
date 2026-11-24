@@ -544,18 +544,31 @@ export function MapelMasterView({
     setNewTargetKelasIds(['ALL']);
     setNewMasukRapor(true);
 
+    const corePayload = {
+      id: newMp.id,
+      kode_mapel: newMp.kodeMapel,
+      nama_latin: newMp.namaLatin,
+      nama_arab: newMp.namaArab,
+      kelompok_id: newMp.kelompokId,
+      urutan_tampil: newMp.urutanTampil,
+      status_aktif: true,
+      status_wajib: true
+    };
+    let syncedToSupabase = true;
     try {
       await SupabaseDB.upsert('mata_pelajaran', {
-        id: newMp.id,
-        kode_mapel: newMp.kodeMapel,
-        nama_latin: newMp.namaLatin,
-        nama_arab: newMp.namaArab,
-        kelompok_id: newMp.kelompokId,
-        urutan_tampil: newMp.urutanTampil,
-        status_aktif: true,
-        status_wajib: true
+        ...corePayload,
+        target_kelas_ids: finalTargetKelasIds,
+        masuk_rapor: newMasukRapor
       });
-    } catch (_) { }
+    } catch (_) {
+      try {
+        await SupabaseDB.upsert('mata_pelajaran', corePayload);
+        syncedToSupabase = false;
+      } catch (__) {
+        syncedToSupabase = false;
+      }
+    }
 
     const selectedGroup = kelompokMapelList.find((g) => g.id === newMp.kelompokId);
     const kelasDesc = finalTargetKelasIds.includes('ALL')
@@ -566,7 +579,10 @@ export function MapelMasterView({
       `Menambahkan kitab/mapel ${newMp.namaLatin} (Kelompok: ${selectedGroup?.namaKelompok || 'Umum'} • Peruntukan: ${kelasDesc})`
     );
     showToast(
-      `Mata pelajaran ${newMp.namaLatin} berhasil ditambahkan (${kelasDesc})!`
+      syncedToSupabase
+        ? `Mata pelajaran ${newMp.namaLatin} berhasil ditambahkan (${kelasDesc})!`
+        : `Mata pelajaran ${newMp.namaLatin} ditambahkan, namun kolom target_kelas_ids belum ada di Supabase (jalankan SQL Migration).`,
+      syncedToSupabase ? 'success' : 'warning'
     );
   };
 
@@ -623,7 +639,7 @@ export function MapelMasterView({
   };
 
   // Simpan Peruntukan Kelas dari Modal
-  const handleSavePeruntukanKelasModal = () => {
+  const handleSavePeruntukanKelasModal = async () => {
     if (!editingKitabForKelas) return;
 
     let finalIds = modalTargetKelasIds;
@@ -641,6 +657,16 @@ export function MapelMasterView({
       localStorage.setItem('rapor_kitab_kelas_map', JSON.stringify(currentMap));
     } catch (_) { }
 
+    let syncedToSupabase = false;
+    try {
+      await SupabaseDB.updateById('mata_pelajaran', editingKitabForKelas.id, {
+        target_kelas_ids: finalIds
+      });
+      syncedToSupabase = true;
+    } catch (_) {
+      syncedToSupabase = false;
+    }
+
     const countLabel = finalIds.includes('ALL')
       ? 'Semua Kelas'
       : `${finalIds.length} Rombel Terpilih`;
@@ -649,7 +675,10 @@ export function MapelMasterView({
       `Memperbarui peruntukan kelas untuk kitab ${editingKitabForKelas.namaLatin} (${countLabel})`
     );
     showToast(
-      `Peruntukan kelas untuk kitab "${editingKitabForKelas.namaLatin}" berhasil disimpan (${countLabel})!`
+      syncedToSupabase
+        ? `Peruntukan kelas untuk kitab "${editingKitabForKelas.namaLatin}" berhasil disimpan ke Supabase (${countLabel})!`
+        : `Peruntukan kelas "${editingKitabForKelas.namaLatin}" tersimpan lokal, namun gagal sinkron ke Supabase. Pastikan kolom target_kelas_ids sudah ditambahkan via SQL Migration.`,
+      syncedToSupabase ? 'success' : 'warning'
     );
     setEditingKitabForKelas(null);
   };
@@ -696,9 +725,18 @@ export function MapelMasterView({
       await SupabaseDB.updateById('mata_pelajaran', editingKitabForKelompok.id, {
         nama_latin: updatedMp.namaLatin,
         nama_arab: updatedMp.namaArab,
-        kelompok_id: updatedMp.kelompokId
+        kelompok_id: updatedMp.kelompokId,
+        masuk_rapor: modalEditMasukRapor
       });
-    } catch (_) { }
+    } catch (_) {
+      try {
+        await SupabaseDB.updateById('mata_pelajaran', editingKitabForKelompok.id, {
+          nama_latin: updatedMp.namaLatin,
+          nama_arab: updatedMp.namaArab,
+          kelompok_id: updatedMp.kelompokId
+        });
+      } catch (__) { }
+    }
 
     const targetGrp = kelompokMapelList.find((g) => g.id === modalEditKelompokId);
     addLog(
@@ -712,7 +750,7 @@ export function MapelMasterView({
   };
 
   // Toggle cepat status masuk rapor langsung dari baris tabel
-  const handleToggleMasukRapor = (mapelId) => {
+  const handleToggleMasukRapor = async (mapelId) => {
     const target = mapelList.find((m) => m.id === mapelId);
     if (!target) return;
     const nextVal = target.masukRapor === false ? true : false;
@@ -725,6 +763,12 @@ export function MapelMasterView({
       const masukMap = JSON.parse(localStorage.getItem('rapor_kitab_masuk_rapor_map') || '{}');
       masukMap[mapelId] = nextVal;
       localStorage.setItem('rapor_kitab_masuk_rapor_map', JSON.stringify(masukMap));
+    } catch (_) { }
+
+    try {
+      await SupabaseDB.updateById('mata_pelajaran', mapelId, {
+        masuk_rapor: nextVal
+      });
     } catch (_) { }
 
     const statusText = nextVal

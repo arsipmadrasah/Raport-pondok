@@ -874,14 +874,22 @@ export default function App() {
               im.id === m.id ||
               im.namaLatin.toLowerCase().trim() === namaLower
           );
+          const dbTargetKelas =
+            Array.isArray(m.target_kelas_ids) && m.target_kelas_ids.length > 0
+              ? m.target_kelas_ids
+              : null;
           const targetKelasIds =
+            dbTargetKelas ||
             savedKitabKelasMap[m.id] ||
             initialMatch?.targetKelasIds ||
             ['ALL'];
+          const dbMasukRapor = typeof m.masuk_rapor === 'boolean' ? m.masuk_rapor : null;
           const masukRapor =
-            savedMasukRaporMap[m.id] !== undefined
-              ? savedMasukRaporMap[m.id]
-              : (initialMatch ? ((initialMatch as any).masukRapor ?? !isBahasaInggris) : !isBahasaInggris);
+            dbMasukRapor !== null
+              ? dbMasukRapor
+              : (savedMasukRaporMap[m.id] !== undefined
+                ? savedMasukRaporMap[m.id]
+                : (initialMatch ? ((initialMatch as any).masukRapor ?? !isBahasaInggris) : !isBahasaInggris));
           return {
             id: m.id,
             kodeMapel: m.kode_mapel,
