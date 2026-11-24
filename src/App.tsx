@@ -197,7 +197,7 @@ export default function App() {
     }
     return INITIAL_GURU;
   });
-  const [nilaiList, setNilaiList] = useState(INITIAL_NILAI);
+  const [nilaiList, setNilaiList] = useState<any[]>([]);
   const [logs, setLogs] = useState(INITIAL_LOGS);
 
   const [dbStatus, setDbStatus] = useState({

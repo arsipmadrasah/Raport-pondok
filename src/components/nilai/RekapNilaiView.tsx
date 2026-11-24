@@ -71,8 +71,24 @@ export function RekapNilaiView({
       let filledCount = 0;
       let dhoifCount = 0;
       let kosongCount = 0;
+      let applicableCount = 0;
 
       activeMapelFiltered.forEach((mp) => {
+        const isApplicable = isMapelForKelas(mp, santri.kelasId);
+        if (!isApplicable) {
+          mapelScores[mp.id] = {
+            isApplicable: false,
+            angkaNilai: null,
+            isFilled: false,
+            isDhoif: false,
+            isKosong: false,
+            predikatLatin: '—',
+            predikatArab: '—'
+          };
+          return;
+        }
+
+        applicableCount += 1;
         const key = `${santri.id}__${mp.id}`;
         const rawVal = nilaiIndex.has(key) ? nilaiIndex.get(key) : null;
         const isFilled = rawVal !== null && rawVal !== undefined && rawVal !== '';
@@ -95,6 +111,7 @@ export function RekapNilaiView({
         if (isKosong) kosongCount += 1;
 
         mapelScores[mp.id] = {
+          isApplicable: true,
           angkaNilai: numericVal,
           isFilled,
           isDhoif,
@@ -117,7 +134,7 @@ export function RekapNilaiView({
         filledCount,
         dhoifCount,
         kosongCount,
-        isComplete: activeMapelFiltered.length > 0 && filledCount === activeMapelFiltered.length
+        isComplete: applicableCount > 0 && filledCount === applicableCount
       };
     });
 
@@ -353,7 +370,8 @@ export function RekapNilaiView({
         const kosongMapels: string[] = [];
         activeMapelFiltered.forEach((mp) => {
           const sc = row.mapelScores[mp.id];
-          if (!sc || sc.isKosong) {
+          if (!sc || sc.isApplicable === false) return;
+          if (sc.isKosong) {
             kosongMapels.push(mp.namaLatin);
           } else if (sc.isDhoif) {
             const valStr = sc.angkaNilai !== null ? Number(sc.angkaNilai).toFixed(2) : '—';
@@ -747,20 +765,23 @@ export function RekapNilaiView({
 
           for (const mp of activeMapelFiltered) {
             const sc = row.mapelScores[mp.id];
-            const isRed = sc ? sc.isDhoif || sc.isKosong : true;
+            const notApplicable = sc && sc.isApplicable === false;
+            const isRed = notApplicable ? false : sc ? sc.isDhoif || sc.isKosong : true;
             const valDisplay =
-              sc && sc.isFilled && sc.angkaNilai !== null
-                ? Number.isInteger(sc.angkaNilai)
-                  ? String(sc.angkaNilai)
-                  : sc.angkaNilai.toFixed(2)
-                : '—';
-            const predDisplay = sc && sc.isFilled ? sc.predikatLatin : 'Kosong';
+              notApplicable
+                ? '—'
+                : sc && sc.isFilled && sc.angkaNilai !== null
+                  ? Number.isInteger(sc.angkaNilai)
+                    ? String(sc.angkaNilai)
+                    : sc.angkaNilai.toFixed(2)
+                  : '—';
+            const predDisplay = notApplicable ? '—' : sc && sc.isFilled ? sc.predikatLatin : 'Kosong';
 
             drawPdfCell(doc, {
               x: cx, y: ry, w: wScore, h: rowH,
               text: valDisplay, align: 'center',
-              fillRgb: isRed ? [220, 38, 38] : [255, 255, 255],
-              textRgb: isRed ? [255, 255, 255] : [0, 0, 0],
+              fillRgb: notApplicable ? [241, 245, 249] : isRed ? [220, 38, 38] : [255, 255, 255],
+              textRgb: notApplicable ? [148, 163, 184] : isRed ? [255, 255, 255] : [0, 0, 0],
               borderRgb: isRed ? [153, 27, 27] : [148, 163, 184],
               fontStyle: 'bold', fontSize: bodyFont, padX: 0.5
             });
@@ -768,8 +789,8 @@ export function RekapNilaiView({
             drawPdfCell(doc, {
               x: cx + wScore, y: ry, w: wPred, h: rowH,
               text: predDisplay, align: 'center',
-              fillRgb: sc?.isKosong || sc?.isDhoif ? [254, 226, 226] : [255, 255, 255],
-              textRgb: sc?.isKosong || sc?.isDhoif ? [153, 27, 27] : [15, 23, 42],
+              fillRgb: notApplicable ? [248, 250, 252] : sc?.isKosong || sc?.isDhoif ? [254, 226, 226] : [255, 255, 255],
+              textRgb: notApplicable ? [148, 163, 184] : sc?.isKosong || sc?.isDhoif ? [153, 27, 27] : [15, 23, 42],
               fontStyle: sc?.isKosong ? 'italic' : sc?.isDhoif ? 'bold' : 'normal',
               fontSize: Math.max(bodyFont - 0.5, 6), padX: 0.5
             });
@@ -994,30 +1015,37 @@ export function RekapNilaiView({
                   {/* MAPEL-MAPEL (NILAI + PREDIKAT DENGAN CONDITIONAL FORMATTING MERAH) */}
                   {activeMapelFiltered.map((mp) => {
                     const sc = row.mapelScores[mp.id];
-                    const isRed = sc ? sc.isDhoif || sc.isKosong : true;
+                    const notApplicable = sc && sc.isApplicable === false;
+                    const isRed = notApplicable ? false : sc ? sc.isDhoif || sc.isKosong : true;
                     const valDisplay =
-                      sc && sc.isFilled && sc.angkaNilai !== null
-                        ? Number.isInteger(sc.angkaNilai)
-                          ? sc.angkaNilai
-                          : sc.angkaNilai.toFixed(2)
-                        : '—';
+                      notApplicable
+                        ? '—'
+                        : sc && sc.isFilled && sc.angkaNilai !== null
+                          ? Number.isInteger(sc.angkaNilai)
+                            ? sc.angkaNilai
+                            : sc.angkaNilai.toFixed(2)
+                          : '—';
                     const predDisplay =
-                      sc && sc.isFilled ? sc.predikatLatin : 'Kosong';
+                      notApplicable ? '—' : sc && sc.isFilled ? sc.predikatLatin : 'Kosong';
 
                     return (
                       <React.Fragment key={mp.id}>
                         {/* Kolom Nilai Angka: MERAH JIKA DHOIF ATAU KOSONG (Persis Cell D3 di Excel) */}
                         <td
-                          className={`py-2 px-2.5 text-center border font-mono font-bold whitespace-nowrap transition-colors ${isRed
-                            ? 'bg-[#EF4444] text-white border-red-600'
-                            : 'bg-white text-slate-800 border-slate-300'
+                          className={`py-2 px-2.5 text-center border font-mono font-bold whitespace-nowrap transition-colors ${notApplicable
+                            ? 'bg-slate-100/80 text-slate-400 border-slate-300'
+                            : isRed
+                              ? 'bg-[#EF4444] text-white border-red-600'
+                              : 'bg-white text-slate-800 border-slate-300'
                             }`}
                           title={
-                            sc?.isKosong
-                              ? `${mp.namaLatin}: Belum ada nilai (Kosong)`
-                              : sc?.isDhoif
-                                ? `${mp.namaLatin}: Nilai Dhoif (${valDisplay})`
-                                : `${mp.namaLatin}: ${valDisplay}`
+                            notApplicable
+                              ? `${mp.namaLatin}: Tidak diajarkan di kelas ini`
+                              : sc?.isKosong
+                                ? `${mp.namaLatin}: Belum ada nilai (Kosong)`
+                                : sc?.isDhoif
+                                  ? `${mp.namaLatin}: Nilai Dhoif (${valDisplay})`
+                                  : `${mp.namaLatin}: ${valDisplay}`
                           }
                         >
                           {valDisplay}
@@ -1025,11 +1053,13 @@ export function RekapNilaiView({
 
                         {/* Kolom Predikat Teks */}
                         <td
-                          className={`py-2 px-2.5 text-center border whitespace-nowrap text-xs transition-colors ${sc?.isKosong
-                            ? 'bg-red-50 text-red-600 border-slate-300 font-semibold italic'
-                            : sc?.isDhoif
-                              ? 'bg-red-50 text-red-700 border-slate-300 font-bold'
-                              : 'bg-white text-slate-700 border-slate-300'
+                          className={`py-2 px-2.5 text-center border whitespace-nowrap text-xs transition-colors ${notApplicable
+                            ? 'bg-slate-50 text-slate-400 border-slate-300'
+                            : sc?.isKosong
+                              ? 'bg-red-50 text-red-600 border-slate-300 font-semibold italic'
+                              : sc?.isDhoif
+                                ? 'bg-red-50 text-red-700 border-slate-300 font-bold'
+                                : 'bg-white text-slate-700 border-slate-300'
                             }`}
                         >
                           {predDisplay}
