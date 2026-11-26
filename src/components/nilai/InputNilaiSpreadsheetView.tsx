@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Search, Save } from 'lucide-react';
 import { isMapelForKelas, resolvePredikat } from '../../utils/academicHelpers';
 import { normalizeTingkat } from '../../constants/initialData';
-import { SupabaseDB } from '../../services/supabase';
+import { SupabaseDB, saveCloudRincianNilaiBatch } from '../../services/supabase';
 
 export function InputNilaiSpreadsheetView({
   santriList,
@@ -68,6 +68,12 @@ export function InputNilaiSpreadsheetView({
     const updatedNilai = [...nilaiList];
     const upsertBatch = [];
     const deletePromises = [];
+    const deletedRincianRecords: Array<{
+      santriId: string;
+      semesterId: string;
+      mapelId: string;
+      avg: number | null;
+    }> = [];
 
     for (const [key, rawVal] of Object.entries(draftCells)) {
       const [santriId, mapelId] = key.split('__');
@@ -86,6 +92,12 @@ export function InputNilaiSpreadsheetView({
           deletePromises.push(
             SupabaseDB.deleteNilaiCell(santriId, selectedSemesterId, mapelId)
           );
+          deletedRincianRecords.push({
+            santriId,
+            semesterId: selectedSemesterId,
+            mapelId,
+            avg: null
+          });
         }
         continue;
       }
@@ -120,6 +132,9 @@ export function InputNilaiSpreadsheetView({
     let dbErrMsg = '';
     try {
       if (deletePromises.length > 0) await Promise.all(deletePromises);
+      if (deletedRincianRecords.length > 0) {
+        await saveCloudRincianNilaiBatch(deletedRincianRecords);
+      }
       if (upsertBatch.length > 0) {
         await SupabaseDB.upsert('nilai', upsertBatch, 'santri_id,semester_id,mapel_id');
       }

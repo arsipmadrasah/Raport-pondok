@@ -322,24 +322,49 @@ export default function App() {
     }
   }, [activeMenu]);
 
-  // Auto-refresh data nilai terbaru dari Supabase setiap berpindah ke Rekap Nilai, Cetak Rapor, Input Nilai, atau Dashboard
+  // Auto-refresh data nilai terbaru dari Supabase saat masuk Mode Guru atau berpindah ke Rekap/Rapor/Input/Dashboard
   useEffect(() => {
-    if (isGuruMode) return;
-    if (activeMenu !== 'nilai-rapor' && activeMenu !== 'dashboard') return;
+    if (!isGuruMode && activeMenu !== 'nilai-rapor' && activeMenu !== 'dashboard') return;
     let cancelled = false;
-    SupabaseDB.selectAll('nilai')
-      .then((nilaiRows) => {
-        if (cancelled || !Array.isArray(nilaiRows)) return;
-        setNilaiList(
-          nilaiRows.map((n) => ({
-            santriId: n.santri_id,
-            semesterId: n.semester_id,
-            mapelId: n.mapel_id,
-            angkaNilai: n.angka_nilai !== null ? Number(n.angka_nilai) : null
-          }))
-        );
-      })
-      .catch(() => { });
+
+    if (isGuruMode) {
+      Promise.all([
+        SupabaseDB.selectAll('nilai'),
+        SupabaseDB.selectAll('log_aktivitas', 'created_at', false)
+      ])
+        .then(([nilaiRows, logRows]) => {
+          if (cancelled) return;
+          if (Array.isArray(nilaiRows)) {
+            setNilaiList(
+              nilaiRows.map((n) => ({
+                santriId: n.santri_id,
+                semesterId: n.semester_id,
+                mapelId: n.mapel_id,
+                angkaNilai: n.angka_nilai !== null ? Number(n.angka_nilai) : null
+              }))
+            );
+          }
+          if (Array.isArray(logRows)) {
+            setRincianNilaiMap(parseCloudRincianNilai(logRows));
+          }
+        })
+        .catch(() => { });
+    } else {
+      SupabaseDB.selectAll('nilai')
+        .then((nilaiRows) => {
+          if (cancelled || !Array.isArray(nilaiRows)) return;
+          setNilaiList(
+            nilaiRows.map((n) => ({
+              santriId: n.santri_id,
+              semesterId: n.semester_id,
+              mapelId: n.mapel_id,
+              angkaNilai: n.angka_nilai !== null ? Number(n.angka_nilai) : null
+            }))
+          );
+        })
+        .catch(() => { });
+    }
+
     return () => {
       cancelled = true;
     };

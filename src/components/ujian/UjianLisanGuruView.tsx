@@ -438,11 +438,11 @@ export function UjianLisanGuruView({
         const cachedAvg = cachedScores ? calculateScore(cachedScores).avg : null;
 
         if (dbAvg !== null) {
-          // Prioritaskan rincian P1-P5 dari Supabase jika rata-ratanya cocok dengan angka_nilai di database
-          if (cloudScores && cloudAvg !== null && Math.abs(cloudAvg - dbAvg) <= 0.01) {
+          // Prioritaskan rincian P1-P5 dari Supabase jika rata-ratanya cocok persis dengan angka_nilai di database
+          if (cloudScores && cloudAvg !== null && Math.abs(cloudAvg - dbAvg) < 0.001) {
             next[s.id] = cloudScores;
-          } else if (cachedScores && cachedAvg !== null && Math.abs(cachedAvg - dbAvg) <= 0.01) {
-            // Fallback ke cache lokal perangkat jika cocok dengan database
+          } else if (cachedScores && cachedAvg !== null && Math.abs(cachedAvg - dbAvg) < 0.001) {
+            // Fallback ke cache lokal perangkat jika cocok persis dengan database
             next[s.id] = cachedScores;
           } else {
             next[s.id] = [dbAvg, dbAvg, dbAvg, '', ''];
