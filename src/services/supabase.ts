@@ -194,6 +194,105 @@ export const SupabaseDB = {
 
 export const MAPEL_CONFIG_LOG_ID = 'sys-config-mapel-kelas';
 export const MAPEL_CONFIG_LOG_AKSI = '__SYS_MAPEL_CONFIG__';
+export const RINCIAN_NILAI_LOG_AKSI = '__SYS_RINCIAN_NILAI__';
+export const RINCIAN_NILAI_ID_PREFIX = 'sys-rincian-';
+
+export type RincianNilaiScores = (number | '')[];
+
+export interface RincianNilaiEntry {
+  scores: RincianNilaiScores;
+  avg: number | null;
+}
+
+export type RincianNilaiMap = Record<string, RincianNilaiEntry>;
+
+export function getRincianNilaiKey(santriId: string, semesterId: string, mapelId: string): string {
+  return `${santriId}__${semesterId}__${mapelId}`;
+}
+
+export function getRincianNilaiLogId(santriId: string, semesterId: string, mapelId: string): string {
+  return `${RINCIAN_NILAI_ID_PREFIX}${semesterId}__${santriId}__${mapelId}`;
+}
+
+export function parseCloudRincianNilai(logRows: any[]): RincianNilaiMap {
+  const result: RincianNilaiMap = {};
+  if (!Array.isArray(logRows)) return result;
+
+  for (const row of logRows) {
+    if (!row) continue;
+    const isRincianRow =
+      row.aksi === RINCIAN_NILAI_LOG_AKSI ||
+      String(row.id || '').startsWith(RINCIAN_NILAI_ID_PREFIX);
+    if (!isRincianRow || !row.deskripsi) continue;
+
+    try {
+      const parsed = JSON.parse(String(row.deskripsi));
+      if (
+        parsed &&
+        parsed.santriId &&
+        parsed.semesterId &&
+        parsed.mapelId &&
+        Array.isArray(parsed.scores)
+      ) {
+        const normalizedScores: RincianNilaiScores = [0, 1, 2, 3, 4].map((idx) => {
+          const val = parsed.scores[idx];
+          if (val === '' || val === null || val === undefined) return '';
+          const num = Number(val);
+          return Number.isNaN(num) ? '' : num;
+        });
+        const avgNum =
+          parsed.avg !== null && parsed.avg !== undefined && !Number.isNaN(Number(parsed.avg))
+            ? Number(parsed.avg)
+            : null;
+        result[getRincianNilaiKey(parsed.santriId, parsed.semesterId, parsed.mapelId)] = {
+          scores: normalizedScores,
+          avg: avgNum
+        };
+      }
+    } catch (_) { }
+  }
+
+  return result;
+}
+
+export async function saveCloudRincianNilaiBatch(
+  records: Array<{
+    santriId: string;
+    semesterId: string;
+    mapelId: string;
+    scores?: RincianNilaiScores;
+    avg: number | null;
+  }>
+): Promise<void> {
+  if (!records || records.length === 0) return;
+
+  const upsertRows = records
+    .filter((r) => r.avg !== null && Array.isArray(r.scores))
+    .map((r) => ({
+      id: getRincianNilaiLogId(r.santriId, r.semesterId, r.mapelId),
+      aksi: RINCIAN_NILAI_LOG_AKSI,
+      deskripsi: JSON.stringify({
+        santriId: r.santriId,
+        semesterId: r.semesterId,
+        mapelId: r.mapelId,
+        scores: r.scores,
+        avg: r.avg
+      }),
+      waktu: 'SYSTEM'
+    }));
+
+  if (upsertRows.length > 0) {
+    await SupabaseDB.upsert('log_aktivitas', upsertRows);
+  }
+
+  const deleteIds = records
+    .filter((r) => r.avg === null)
+    .map((r) => getRincianNilaiLogId(r.santriId, r.semesterId, r.mapelId));
+
+  if (deleteIds.length > 0) {
+    await SupabaseDB.deleteByIds('log_aktivitas', deleteIds);
+  }
+}
 
 export interface CloudMapelConfig {
   targetKelasMap: Record<string, string[]>;

@@ -186,8 +186,8 @@ export function PredikatConfigView({
                     ) : (
                       <span
                         className={`inline-block px-2.5 py-1 rounded-md text-xs ${isDhoif
-                            ? 'bg-red-100 text-red-800 border border-red-200 font-bold'
-                            : 'bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold'
+                          ? 'bg-red-100 text-red-800 border border-red-200 font-bold'
+                          : 'bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold'
                           }`}
                       >
                         {p.predikatLatin}

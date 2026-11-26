@@ -18,6 +18,11 @@ import { runLiquidSplash } from '../../utils/liquidSplash';
 import { normalizeTingkat, GuruItem } from '../../constants/initialData';
 import { isMapelForKelas } from '../../utils/academicHelpers';
 import { BaliBinaInsaniLogo } from '../common/BaliBinaInsaniLogo';
+import {
+  RincianNilaiMap,
+  RincianNilaiScores,
+  getRincianNilaiKey
+} from '../../services/supabase';
 
 export const DUMMY_USTADZ_LIST = [
   'Ust. Ahmad Zaki, S.Pd.I',
@@ -41,9 +46,22 @@ interface UjianLisanGuruViewProps {
   santriList: any[];
   mapelList: any[];
   nilaiList: any[];
+  rincianNilaiMap?: RincianNilaiMap;
   selectedSemesterId: string;
-  onSaveNilai: (santriId: string, mapelId: string, angkaNilai: number | null) => Promise<void>;
-  onSaveMultipleNilai?: (records: Array<{ santriId: string; mapelId: string; angkaNilai: number | null }>) => Promise<void>;
+  onSaveNilai: (
+    santriId: string,
+    mapelId: string,
+    angkaNilai: number | null,
+    rincianNilai?: RincianNilaiScores
+  ) => Promise<void>;
+  onSaveMultipleNilai?: (
+    records: Array<{
+      santriId: string;
+      mapelId: string;
+      angkaNilai: number | null;
+      rincianNilai?: RincianNilaiScores;
+    }>
+  ) => Promise<void>;
   showToast: (msg: string, type?: 'success' | 'warning' | 'error') => void;
   pondok?: any;
   guruList?: GuruItem[];
@@ -57,6 +75,7 @@ export function UjianLisanGuruView({
   santriList,
   mapelList,
   nilaiList,
+  rincianNilaiMap,
   selectedSemesterId,
   onSaveNilai,
   onSaveMultipleNilai,
@@ -408,12 +427,22 @@ export function UjianLisanGuruView({
             ? Number(matchNilai.angkaNilai)
             : null;
 
+        const cloudEntry = rincianNilaiMap?.[
+          getRincianNilaiKey(s.id, selectedSemesterId, selectedMapelId)
+        ];
+        const cloudScores =
+          cloudEntry && Array.isArray(cloudEntry.scores) ? cloudEntry.scores : undefined;
+        const cloudAvg = cloudScores ? calculateScore(cloudScores).avg : null;
+
         const cachedScores = Array.isArray(cachedMap[s.id]) ? cachedMap[s.id] : undefined;
         const cachedAvg = cachedScores ? calculateScore(cachedScores).avg : null;
 
         if (dbAvg !== null) {
-          // Gunakan rincian butir soal localStorage HANYA jika rata-ratanya masih cocok dengan Supabase
-          if (cachedScores && cachedAvg !== null && Math.abs(cachedAvg - dbAvg) <= 0.01) {
+          // Prioritaskan rincian P1-P5 dari Supabase jika rata-ratanya cocok dengan angka_nilai di database
+          if (cloudScores && cloudAvg !== null && Math.abs(cloudAvg - dbAvg) <= 0.01) {
+            next[s.id] = cloudScores;
+          } else if (cachedScores && cachedAvg !== null && Math.abs(cachedAvg - dbAvg) <= 0.01) {
+            // Fallback ke cache lokal perangkat jika cocok dengan database
             next[s.id] = cachedScores;
           } else {
             next[s.id] = [dbAvg, dbAvg, dbAvg, '', ''];
@@ -432,7 +461,7 @@ export function UjianLisanGuruView({
 
       return next;
     });
-  }, [storageKey, selectedKelasId, selectedMapelId, selectedSemesterId, nilaiList, santriInKelas]);
+  }, [storageKey, selectedKelasId, selectedMapelId, selectedSemesterId, nilaiList, rincianNilaiMap, santriInKelas]);
 
   // Mengubah butir soal (1 s.d 5) saat ujian berlangsung atau perbaikan nilai remedial
   const handleScoreChange = (
@@ -492,7 +521,12 @@ export function UjianLisanGuruView({
     try {
       const snapshotExamItems = { ...examItemsRef.current };
       const sentFingerprints = new Map<string, string>();
-      const recordsToSave: Array<{ santriId: string; mapelId: string; angkaNilai: number | null }> = [];
+      const recordsToSave: Array<{
+        santriId: string;
+        mapelId: string;
+        angkaNilai: number | null;
+        rincianNilai?: RincianNilaiScores;
+      }> = [];
 
       // Hanya kirim santri yang punya nilai atau yang nilainya memang dihapus dari database
       santriInKelas.forEach((s) => {
@@ -506,28 +540,33 @@ export function UjianLisanGuruView({
             n.angkaNilai !== null
         );
         if (avg !== null || hasExistingInDb) {
+          const normalizedScores: RincianNilaiScores = [0, 1, 2, 3, 4].map((idx) => {
+            const val = scores?.[idx];
+            return val === '' || val === undefined || val === null ? '' : Number(val);
+          });
           sentFingerprints.set(s.id, JSON.stringify(scores || []));
           recordsToSave.push({
             santriId: s.id,
             mapelId: selectedMapelId,
-            angkaNilai: avg
+            angkaNilai: avg,
+            rincianNilai: normalizedScores
           });
         }
       });
+
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(snapshotExamItems));
+      } catch (_) { }
 
       if (recordsToSave.length > 0) {
         if (onSaveMultipleNilai) {
           await onSaveMultipleNilai(recordsToSave);
         } else {
           for (const rec of recordsToSave) {
-            await onSaveNilai(rec.santriId, rec.mapelId, rec.angkaNilai);
+            await onSaveNilai(rec.santriId, rec.mapelId, rec.angkaNilai, rec.rincianNilai);
           }
         }
       }
-
-      try {
-        localStorage.setItem(storageKey, JSON.stringify(examItemsRef.current));
-      } catch (_) { }
 
       // Hanya bersihkan tanda belum tersimpan untuk santri yang nilainya tidak berubah selama proses simpan
       const remainingUnsaved = new Set<string>();

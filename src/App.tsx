@@ -52,7 +52,14 @@ import {
   SUPABASE_SQL_MIGRATION,
   MAPEL_CONFIG_LOG_ID,
   MAPEL_CONFIG_LOG_AKSI,
-  parseCloudMapelConfig
+  parseCloudMapelConfig,
+  RINCIAN_NILAI_LOG_AKSI,
+  RINCIAN_NILAI_ID_PREFIX,
+  RincianNilaiMap,
+  RincianNilaiScores,
+  getRincianNilaiKey,
+  parseCloudRincianNilai,
+  saveCloudRincianNilaiBatch
 } from './services/supabase';
 
 import { BaliBinaInsaniLogo } from './components/common/BaliBinaInsaniLogo';
@@ -198,6 +205,7 @@ export default function App() {
     return INITIAL_GURU;
   });
   const [nilaiList, setNilaiList] = useState<any[]>([]);
+  const [rincianNilaiMap, setRincianNilaiMap] = useState<RincianNilaiMap>({});
   const [logs, setLogs] = useState(INITIAL_LOGS);
 
   const [dbStatus, setDbStatus] = useState({
@@ -1019,8 +1027,14 @@ export default function App() {
         );
       }
 
+      setRincianNilaiMap(parseCloudRincianNilai(logRows));
+
       const visibleLogs = logRows.filter(
-        (l: any) => l.id !== MAPEL_CONFIG_LOG_ID && l.aksi !== MAPEL_CONFIG_LOG_AKSI
+        (l: any) =>
+          l.id !== MAPEL_CONFIG_LOG_ID &&
+          l.aksi !== MAPEL_CONFIG_LOG_AKSI &&
+          l.aksi !== RINCIAN_NILAI_LOG_AKSI &&
+          !String(l.id || '').startsWith(RINCIAN_NILAI_ID_PREFIX)
       );
       if (visibleLogs.length > 0) {
         setLogs(
@@ -1186,7 +1200,8 @@ export default function App() {
   const handleSaveSingleNilai = async (
     santriId: string,
     mapelId: string,
-    angkaNilai: number | null
+    angkaNilai: number | null,
+    rincianNilai?: RincianNilaiScores
   ) => {
     setNilaiList((prev) => {
       const idx = prev.findIndex(
@@ -1219,8 +1234,26 @@ export default function App() {
       ];
     });
 
+    const rincianKey = getRincianNilaiKey(santriId, selectedSemesterId, mapelId);
+    if (angkaNilai === null) {
+      setRincianNilaiMap((prev) => {
+        if (!(rincianKey in prev)) return prev;
+        const next = { ...prev };
+        delete next[rincianKey];
+        return next;
+      });
+    } else if (Array.isArray(rincianNilai)) {
+      setRincianNilaiMap((prev) => ({
+        ...prev,
+        [rincianKey]: { scores: rincianNilai, avg: angkaNilai }
+      }));
+    }
+
     if (angkaNilai === null) {
       await SupabaseDB.deleteNilaiCell(santriId, selectedSemesterId, mapelId);
+      await saveCloudRincianNilaiBatch([
+        { santriId, semesterId: selectedSemesterId, mapelId, avg: null }
+      ]);
     } else {
       await SupabaseDB.upsert(
         'nilai',
@@ -1232,12 +1265,41 @@ export default function App() {
         },
         'santri_id,semester_id,mapel_id'
       );
+      if (Array.isArray(rincianNilai)) {
+        await saveCloudRincianNilaiBatch([
+          {
+            santriId,
+            semesterId: selectedSemesterId,
+            mapelId,
+            scores: rincianNilai,
+            avg: angkaNilai
+          }
+        ]);
+      }
     }
   };
 
   const handleSaveMultipleNilai = async (
-    records: Array<{ santriId: string; mapelId: string; angkaNilai: number | null }>
+    records: Array<{
+      santriId: string;
+      mapelId: string;
+      angkaNilai: number | null;
+      rincianNilai?: RincianNilaiScores;
+    }>
   ) => {
+    setRincianNilaiMap((prev) => {
+      const next = { ...prev };
+      records.forEach((rec) => {
+        const key = getRincianNilaiKey(rec.santriId, selectedSemesterId, rec.mapelId);
+        if (rec.angkaNilai === null) {
+          delete next[key];
+        } else if (Array.isArray(rec.rincianNilai)) {
+          next[key] = { scores: rec.rincianNilai, avg: rec.angkaNilai };
+        }
+      });
+      return next;
+    });
+
     setNilaiList((prev) => {
       const next = [...prev];
       records.forEach((rec) => {
@@ -1284,6 +1346,19 @@ export default function App() {
         )
       );
     }
+
+    const rincianRecords = records
+      .filter((r) => r.angkaNilai === null || Array.isArray(r.rincianNilai))
+      .map((r) => ({
+        santriId: r.santriId,
+        semesterId: selectedSemesterId,
+        mapelId: r.mapelId,
+        scores: r.rincianNilai,
+        avg: r.angkaNilai
+      }));
+    if (rincianRecords.length > 0) {
+      await saveCloudRincianNilaiBatch(rincianRecords);
+    }
   };
 
   if (!hasInitialLoadDone) {
@@ -1320,6 +1395,7 @@ export default function App() {
         santriList={santriList}
         mapelList={mapelList}
         nilaiList={nilaiList}
+        rincianNilaiMap={rincianNilaiMap}
         selectedSemesterId={selectedSemesterId}
         onSaveNilai={handleSaveSingleNilai}
         onSaveMultipleNilai={handleSaveMultipleNilai}
